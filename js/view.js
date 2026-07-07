@@ -1,5 +1,5 @@
 // ============================================================
-//  QC Report — view.html logic (ดู / อนุมัติ / ปริ้น)
+//  QC Report — view.html logic (ดู / อนุมัติ / แชร์ / แปลภาษา / ปริ้น)
 // ============================================================
 
 if (!Auth.requireAuth()) { /* redirected */ }
@@ -12,49 +12,23 @@ const qs = new URLSearchParams(window.location.search);
 const docId = qs.get('id');
 
 let approvedSign = null;
-
-function photoFigure(url, label) {
-  return `<figure><img src="${url}" onclick="window.open('${url}','_blank')"><figcaption>${label}</figcaption></figure>`;
-}
-
-function reasonItemHtml(it, idx) {
-  const photosHtml = (it.photos || []).map(p => `
-    ${p.closeup ? photoFigure(p.closeup, 'close-up') : ''}
-    ${p.overview ? photoFigure(p.overview, 'ภาพรวม') : ''}
-  `).join('');
-  return `
-    <div class="doc-reason-item">
-      <div class="head">
-        <div>${idx + 1}) <span class="tag tag-${it.type}">${it.type}</span> ${escapeHtml(it.reason_text)}</div>
-        <div><b>Qty:</b> ${it.qty} Pcs</div>
-      </div>
-      ${photosHtml ? `<div class="doc-photo-grid">${photosHtml}</div>` : ''}
-      ${it.video_url ? `<div class="doc-clip">link clip: <a href="${it.video_url}" target="_blank" rel="noopener">${it.video_url}</a></div>` : ''}
-    </div>`;
-}
-
-function escapeHtml(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-function signBoxHtml(label, name, signUrl, dateStr) {
-  return `<div class="box">
-    ${signUrl ? `<img src="${signUrl}">` : `<div class="placeholder-line"></div>`}
-    <div>${name || '-'}</div>
-    <div style="color:var(--muted);font-size:12px">${label} · ${fmtDateTH(dateStr)}</div>
-  </div>`;
-}
+let curLang = 'th';
+let curReport = null, curItems = null;
 
 async function load() {
   if (!docId) { appEl.innerHTML = `<div class="empty-state">ไม่พบเลขที่เอกสาร</div>`; return; }
   const res = await API.getReport(docId);
   if (!res.success) { appEl.innerHTML = `<div class="empty-state">${escapeHtml(res.message || 'ไม่พบเอกสาร')}</div>`; return; }
-  render(res.report, res.items);
+  curReport = res.report; curItems = res.items;
+  render();
 }
 
-function render(report, items) {
-  const canApprove = report.status === 'pending_approval' && (Auth.getUser() || {}).role === 'admin';
+function render() {
+  const report = curReport, items = curItems;
+  const role = (Auth.getUser() || {}).role;
+  const canApprove = report.status === 'pending_approval' && role === 'admin';
   const isApproved = report.status === 'approved';
+  const canShare = ['admin', 'monitor'].includes(role);
 
   const approvedBoxHtml = isApproved
     ? signBoxHtml('Approved by', report.approved_by, report.approved_sign_url, report.approved_date)
@@ -68,51 +42,24 @@ function render(report, items) {
          </div>`
       : `<div class="box"><div class="placeholder-line"></div><div style="color:var(--muted)">รออนุมัติ</div></div>`;
 
+  const docBody = buildDocHtml(report, items, { lang: curLang, approvedBoxHtml });
+
   appEl.innerHTML = `
     <div class="doc-a4">
-      <div class="doc-head">
-        <div class="no-box">NO. ${escapeHtml(report.id)}</div>
-        <div class="company">APOSTROPHE L CO.,LTD</div>
-        <div class="title">รายงานตรวจสอบคุณภาพสินค้า (QC REPORT)</div>
-      </div>
-
-      <div class="doc-grid">
-        <div class="row"><span class="k">Supplier Code</span><span class="v">${escapeHtml(report.supplier_code)}</span></div>
-        <div class="row"><span class="k">Date In</span><span class="v">${fmtDateTH(report.date_in)}</span></div>
-        <div class="row"><span class="k">Stock Code</span><span class="v">${escapeHtml(report.stock_code)}</span></div>
-        <div class="row"><span class="k">QA Date</span><span class="v">${fmtDateTH(report.date_qa)}</span></div>
-        <div class="row"><span class="k">EAN 13 Code</span><span class="v">${escapeHtml(report.ean13 || '-')}</span></div>
-        <div class="row"><span class="k">Order (Pcs)</span><span class="v">${report.order_qty}</span></div>
-      </div>
-      <div class="row" style="border-bottom:1px dotted var(--border);padding:4px 0;margin-bottom:10px">
-        <span class="k">Description</span> <span class="v">${escapeHtml(report.description)}</span>
-      </div>
-
-      <div class="doc-summary">
-        <div class="box summary-accepted">Accepted<br>${report.accepted_qty} Pcs</div>
-        <div class="box summary-defected">Defected<br>${report.defected_qty} Pcs</div>
-        <div class="box summary-rejected">Rejected<br>${report.rejected_qty} Pcs</div>
-      </div>
-
-      <div class="doc-reason">
-        <h3>Reason for Defected and Rejected</h3>
-        ${items.length ? items.map(reasonItemHtml).join('') : '<div class="empty-state">ไม่มีรายการตรวจ (สินค้าผ่านทั้งหมด)</div>'}
-      </div>
-
-      <div class="doc-sign-row">
-        ${signBoxHtml('Verified by', report.verified_by, report.verified_sign_url, report.verified_date)}
-        ${approvedBoxHtml}
-      </div>
-
+      ${docBody}
       ${!isApproved && !canApprove ? `<div class="pending-note">⏳ เอกสารนี้อยู่ระหว่างรออนุมัติ</div>` : ''}
-
-      <div class="doc-actions">
+      <div class="doc-actions no-print">
         ${canApprove ? `<button type="button" class="btn btn-primary" id="btnApprove">ส่งเข้าระบบ</button>` : ''}
         ${isApproved ? `<button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ ปริ้นเอกสาร</button>` : ''}
+        <button type="button" class="btn btn-ghost" id="btnLang">${curLang === 'th' ? '🌐 English' : '🌐 ภาษาไทย'}</button>
+        ${canShare ? `<button type="button" class="btn btn-ghost" id="btnShare">🔗 แชร์ลิงก์</button>` : ''}
         <a href="reports.html" class="btn btn-ghost">กลับไปหน้ารายงาน</a>
       </div>
     </div>
   `;
+
+  document.getElementById('btnLang').addEventListener('click', onToggleLang);
+  if (canShare) document.getElementById('btnShare').addEventListener('click', onShare);
 
   if (canApprove) {
     flatpickr('#approved_date', {
@@ -139,6 +86,28 @@ function render(report, items) {
       }
     });
   }
+}
+
+async function onToggleLang() {
+  const wantEn = curLang === 'th';
+  if (wantEn) {
+    const needsTranslate = !curReport.description_en || curItems.some(it => it.reason_text && !it.reason_text_en);
+    if (needsTranslate) {
+      const res = await API.translateReport({ id: curReport.id });
+      if (!res.success) { toast(res.message || 'แปลภาษาไม่สำเร็จ', 'error'); return; }
+      curReport = Object.assign({}, curReport, { description_en: res.report.description_en });
+      curItems = res.items;
+    }
+  }
+  curLang = wantEn ? 'en' : 'th';
+  render();
+}
+
+async function onShare() {
+  const res = await API.shareReport({ id: curReport.id });
+  if (!res.success) { toast(res.message || 'สร้างลิงก์ไม่สำเร็จ', 'error'); return; }
+  const url = window.location.origin + window.location.pathname.replace(/view\.html$/, '') + 'share.html?token=' + res.token;
+  window.prompt('ลิงก์แชร์ (คัดลอกไปส่งได้เลย — กดปุ่มนี้ซ้ำจะได้ลิงก์ใหม่ ลิงก์เก่าจะใช้ไม่ได้ทันที):', url);
 }
 
 load();

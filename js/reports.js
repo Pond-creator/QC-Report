@@ -44,13 +44,15 @@ function render() {
   }
   if (!rows.length) { listWrap.innerHTML = `<div class="empty-state">ไม่พบเอกสาร</div>`; return; }
 
+  const isAdmin = (Auth.getUser() || {}).role === 'admin';
+
   listWrap.innerHTML = `
     <table class="report-table">
       <thead>
         <tr>
           <th>NO.</th><th>Supplier Code</th><th>Stock Code</th><th>Description</th>
           <th>Order</th><th>Accepted</th><th>Defected</th><th>Rejected</th>
-          <th>สถานะ</th><th>วันที่สร้าง</th>
+          <th>สถานะ</th><th>วันที่สร้าง</th>${isAdmin ? '<th>จัดการ</th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -66,10 +68,29 @@ function render() {
             <td>${r.rejected_qty}</td>
             <td><span class="badge badge-${r.status === 'approved' ? 'approved' : 'pending'}">${statusLabel(r.status)}</span></td>
             <td>${fmtDateTimeTH(r.created_at)}</td>
+            ${isAdmin ? `<td class="row-actions">
+              <button type="button" class="icon-btn" title="แก้ไข" data-act="edit" data-id="${escapeHtml(r.id)}">✏️</button>
+              <button type="button" class="icon-btn" title="ลบ" data-act="delete" data-id="${escapeHtml(r.id)}">🗑</button>
+            </td>` : ''}
           </tr>`).join('')}
       </tbody>
     </table>`;
 }
+
+listWrap.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  e.stopPropagation();
+  const id = btn.dataset.id;
+  if (btn.dataset.act === 'edit') {
+    window.location.href = 'form.html?id=' + encodeURIComponent(id);
+  } else if (btn.dataset.act === 'delete') {
+    if (!confirm(`ลบเอกสาร ${id} ถาวร? การกระทำนี้ย้อนกลับไม่ได้`)) return;
+    const res = await API.deleteReport({ id });
+    if (res.success) { toast('ลบเอกสารแล้ว', 'success'); loadList(); }
+    else toast(res.message || 'ลบไม่สำเร็จ', 'error');
+  }
+});
 
 document.getElementById('q').addEventListener('input', render);
 document.getElementById('statusFilter').addEventListener('change', render);

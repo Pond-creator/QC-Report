@@ -24,6 +24,8 @@ flatpickr('#verified_date', Object.assign({ defaultDate: 'today' }, fpOpts));
 
 document.getElementById('verified_by').value = (Auth.getUser() || {}).name || '';
 
+const editId = new URLSearchParams(window.location.search).get('id');
+
 // ====== state ======
 let items = [];
 let verifiedSign = null;
@@ -155,6 +157,7 @@ document.getElementById('btnSignVerified').addEventListener('click', () => {
 // ====== submit ======
 document.getElementById('btnSubmit').addEventListener('click', async () => {
   const supplier_code = val('supplier_code').trim();
+  const supplier_name = val('supplier_name').trim();
   const stock_code = val('stock_code').trim();
   const ean13 = val('ean13').trim();
   const description = val('description').trim();
@@ -169,22 +172,37 @@ document.getElementById('btnSubmit').addEventListener('click', async () => {
     if (!items[i].reason_text.trim()) { toast(`กรุณากรอก Reason ของรายการที่ ${i + 1}`, 'error'); return; }
     if (num(items[i].qty) <= 0) { toast(`กรุณากรอก Qty ของรายการที่ ${i + 1}`, 'error'); return; }
   }
+
+  const itemsPayload = items.map(it => ({
+    type: it.type, reason_text: it.reason_text.trim(), qty: num(it.qty),
+    photos: it.photos.filter(p => p.closeup || p.overview),
+    video: it.video || null
+  }));
+
+  if (editId) {
+    const res = await API.updateReport({
+      id: editId, supplier_code, supplier_name, stock_code, ean13, description, order_qty, date_in, date_qa,
+      items: itemsPayload
+    });
+    if (res.success) {
+      toast('บันทึกการแก้ไขสำเร็จ', 'success');
+      setTimeout(() => { window.location.href = 'view.html?id=' + encodeURIComponent(editId); }, 600);
+    } else {
+      toast(res.message || 'บันทึกไม่สำเร็จ', 'error');
+    }
+    return;
+  }
+
   if (!verifiedSign) { toast('กรุณาเซ็นชื่อผู้ตรวจสอบ (Verified by) ก่อนส่งข้อมูล', 'error'); return; }
   const verified_date = val('verified_date');
   if (!verified_date) { toast('กรุณาเลือก Date สำหรับ Verified by', 'error'); return; }
   const verified_by = val('verified_by').trim() || (Auth.getUser() || {}).name;
 
-  const payload = {
-    supplier_code, stock_code, ean13, description, order_qty, date_in, date_qa,
+  const res = await API.createReport({
+    supplier_code, supplier_name, stock_code, ean13, description, order_qty, date_in, date_qa,
     verified_sign: verifiedSign, verified_by, verified_date,
-    items: items.map(it => ({
-      type: it.type, reason_text: it.reason_text.trim(), qty: num(it.qty),
-      photos: it.photos.filter(p => p.closeup || p.overview),
-      video: it.video || null
-    }))
-  };
-
-  const res = await API.createReport(payload);
+    items: itemsPayload
+  });
   if (res.success) {
     toast('ส่งข้อมูลสำเร็จ: ' + res.id, 'success');
     setTimeout(() => { window.location.href = 'view.html?id=' + encodeURIComponent(res.id); }, 600);
@@ -193,4 +211,35 @@ document.getElementById('btnSubmit').addEventListener('click', async () => {
   }
 });
 
+// ====== โหมดแก้ไข: โหลดข้อมูลเดิมมาเติมในฟอร์ม ======
+async function loadForEdit(id) {
+  const res = await API.getReport(id);
+  if (!res.success) { toast(res.message || 'โหลดเอกสารไม่สำเร็จ', 'error'); return; }
+  const r = res.report;
+  document.getElementById('supplier_code').value = r.supplier_code || '';
+  document.getElementById('supplier_name').value = r.supplier_name || '';
+  document.getElementById('stock_code').value = r.stock_code || '';
+  document.getElementById('ean13').value = r.ean13 || '';
+  document.getElementById('description').value = r.description || '';
+  document.getElementById('order_qty').value = r.order_qty || 0;
+  if (r.date_in) document.querySelector('#date_in')._flatpickr.setDate(r.date_in, true);
+  if (r.date_qa) document.querySelector('#date_qa')._flatpickr.setDate(r.date_qa, true);
+
+  items = (res.items || []).map(it => ({
+    type: it.type, reason_text: it.reason_text || '', qty: it.qty,
+    photos: (it.photos || []).map(p => ({ closeup: p.closeup || null, overview: p.overview || null })),
+    video: it.video_url || null,
+    videoName: it.video_url ? 'ไฟล์วิดีโอเดิม (เลือกใหม่เพื่อเปลี่ยน)' : ''
+  }));
+  renderItems();
+
+  document.getElementById('signRowWrap').innerHTML = `<div style="background:#f4f5f7;padding:14px;border-radius:8px;text-align:center;color:var(--muted);width:100%">
+    ลายเซ็น Verified by เดิม: <b>${escapeHtml(r.verified_by || '-')}</b> · ${fmtDateTH(r.verified_date)}<br>
+    <span style="font-size:12px">(แก้ไขข้อมูลจะไม่เปลี่ยนลายเซ็นเดิม)</span>
+  </div>`;
+  document.getElementById('pageTitle').textContent = 'แก้ไขใบตรวจ QC — ' + r.id;
+  document.getElementById('btnSubmit').textContent = 'บันทึกการแก้ไข';
+}
+
+if (editId) loadForEdit(editId);
 renderItems();

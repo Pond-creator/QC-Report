@@ -23,32 +23,36 @@
 
   <div class="container">
     <div class="card">
-      <h2>ใบตรวจสอบคุณภาพสินค้า (QC Report)</h2>
+      <h2 id="pageTitle">ใบตรวจสอบคุณภาพสินค้า (QC Report)</h2>
       <div class="grid-2">
         <div class="field field-red">
           <label>Supplier Code <span class="req">*</span></label>
           <input type="text" id="supplier_code">
         </div>
         <div class="field field-red">
-          <label>Date สินค้าเข้า (Date In) <span class="req">*</span></label>
-          <input type="text" id="date_in" placeholder="เลือกวันที่" readonly>
+          <label>Supplier Name</label>
+          <input type="text" id="supplier_name">
         </div>
         <div class="field field-red">
           <label>Stock Code <span class="req">*</span></label>
           <input type="text" id="stock_code">
         </div>
         <div class="field field-red">
-          <label>Date QA สินค้า (QA Date) <span class="req">*</span></label>
-          <input type="text" id="date_qa" placeholder="เลือกวันที่" readonly>
+          <label>Date สินค้าเข้า (Date In) <span class="req">*</span></label>
+          <input type="text" id="date_in" placeholder="เลือกวันที่" readonly>
         </div>
         <div class="field field-red">
           <label>EAN 13 Code</label>
           <input type="text" id="ean13">
         </div>
         <div class="field field-red">
-          <label>Order (Pcs) <span class="req">*</span></label>
-          <input type="number" min="0" id="order_qty" value="0">
+          <label>Date QA สินค้า (QA Date) <span class="req">*</span></label>
+          <input type="text" id="date_qa" placeholder="เลือกวันที่" readonly>
         </div>
+      </div>
+      <div class="field field-red">
+        <label>Order (Pcs) <span class="req">*</span></label>
+        <input type="number" min="0" id="order_qty" value="0">
       </div>
       <div class="field field-red">
         <label>Description <span class="req">*</span></label>
@@ -77,8 +81,8 @@
       <button type="button" class="btn btn-ghost" id="btnAddReason">+ เพิ่มการตรวจสอบ</button>
     </div>
 
-    <div class="card">
-      <div class="sign-row">
+    <div class="card" id="signCard">
+      <div class="sign-row" id="signRowWrap">
         <div class="sign-box">
           <div class="sign-canvas-preview" id="verifiedPreview"><span class="placeholder">ยังไม่เซ็นชื่อ</span></div>
           <button type="button" class="btn btn-ghost btn-sm" id="btnSignVerified">✍️ Sign</button>

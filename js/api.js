@@ -63,10 +63,27 @@ async function apiCall(action, data = {}, opts = {}) {
 const API = {
   login:          (username, password) => apiCall('login', { username, password }),
   createReport:   (data) => apiCall('createReport', data, { loadingText: 'กำลังบันทึกใบตรวจ...' }),
+  updateReport:   (data) => apiCall('updateReport', data, { loadingText: 'กำลังบันทึกการแก้ไข...' }),
+  deleteReport:   (data) => apiCall('deleteReport', data, { loadingText: 'กำลังลบเอกสาร...' }),
   getReport:      (id) => apiCall('getReport', { id }),
   listReports:    (filters = {}) => apiCall('listReports', filters, { silent: true }),
-  approveReport:  (data) => apiCall('approveReport', data, { loadingText: 'กำลังบันทึกการอนุมัติ...' })
+  approveReport:  (data) => apiCall('approveReport', data, { loadingText: 'กำลังบันทึกการอนุมัติ...' }),
+  shareReport:    (data) => apiCall('shareReport', data, { loadingText: 'กำลังสร้างลิงก์แชร์...' }),
+  translateReport:(data) => apiCall('translateReport', data, { loadingText: 'กำลังแปลภาษา...' })
 };
+
+// เรียก getSharedReport แบบไม่ต้อง login (ใช้ในหน้า share.html) — ไม่มี token ผู้ใช้ ไม่ผ่าน apiCall ปกติ
+async function apiCallPublic(action, data = {}) {
+  const payload = { action, ...data };
+  try {
+    const params = new URLSearchParams();
+    Object.entries(payload).forEach(([k, v]) => params.append(k, typeof v === 'object' ? JSON.stringify(v) : v));
+    const res = await fetch(API_URL + '?' + params.toString());
+    return await res.json();
+  } catch (err) {
+    return { success: false, message: 'เชื่อมต่อ API ไม่ได้: ' + err.message };
+  }
+}
 
 // ====== UI helpers ======
 function toast(msg, type = 'info') {
