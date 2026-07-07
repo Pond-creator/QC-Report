@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ — QC Report</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="login-card" id="loginForm">
+      <h1>QC/QA Report</h1>
+      <div class="sub">APOSTROPHE L CO.,LTD</div>
+      <div class="field">
+        <input type="text" id="username" placeholder="Username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+      <div class="error" id="loginError"></div>
+    </form>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) window.location.href = Auth.landing();
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = '';
+      const res = await API.login(username, password);
+      if (res.success) {
+        Auth.setSession(res.token, res.user);
+        window.location.href = Auth.landing();
+      } else {
+        errEl.textContent = res.message || 'เข้าสู่ระบบไม่สำเร็จ';
+      }
+    });
+  </script>
+</body>
+</html>

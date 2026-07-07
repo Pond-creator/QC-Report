@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายงานเอกสาร — QC Report</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">QC/QA Report<small>APOSTROPHE L CO.,LTD</small></div>
+    <nav>
+      <a href="form.html">สร้างใบตรวจ</a>
+      <a href="reports.html" class="active">รายงาน</a>
+    </nav>
+    <div class="user-box">
+      <span id="userName"></span>
+      <span class="role-badge" id="userRole"></span>
+      <button class="logout-btn" onclick="Auth.logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="container-wide">
+    <h2>รายการเอกสาร QC Report</h2>
+    <div class="search-bar">
+      <input type="text" id="q" placeholder="ค้นหา เลขที่/Supplier/Stock code/EAN13/Description">
+      <select id="statusFilter">
+        <option value="">ทุกสถานะ</option>
+        <option value="pending_approval">รออนุมัติ</option>
+        <option value="approved">อนุมัติแล้ว</option>
+      </select>
+    </div>
+    <div id="listWrap"><div class="empty-state">กำลังโหลด...</div></div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/reports.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ใบตรวจ QC — QC Report</title>
+<link rel="stylesheet" href="lib/flatpickr.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="topbar no-print">
+    <div class="brand">QC/QA Report<small>APOSTROPHE L CO.,LTD</small></div>
+    <nav>
+      <a href="form.html">สร้างใบตรวจ</a>
+      <a href="reports.html">รายงาน</a>
+    </nav>
+    <div class="user-box">
+      <span id="userName"></span>
+      <span class="role-badge" id="userRole"></span>
+      <button class="logout-btn" onclick="Auth.logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="container" id="app">
+    <div class="empty-state">กำลังโหลด...</div>
+  </div>
+
+  <script src="lib/flatpickr.min.js"></script>
+  <script src="lib/flatpickr-th.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/signature.js"></script>
+  <script src="js/view.js"></script>
+</body>
+</html>
