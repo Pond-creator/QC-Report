@@ -56,7 +56,7 @@ function render() {
     <table class="report-table">
       <thead>
         <tr>
-          <th>NO.</th><th>Supplier Code</th><th>Stock Code</th><th>Description</th>
+          <th>NO.</th><th>Supplier Item Code</th><th>Stock Code</th><th>Description</th>
           <th>Order</th><th>Accepted</th><th>Defected</th><th>Rejected</th>
           <th>สถานะ</th><th>วันที่สร้าง</th>${isAdmin ? '<th>จัดการ</th>' : ''}
         </tr>
@@ -64,17 +64,17 @@ function render() {
       <tbody>
         ${pageRows.map(r => `
           <tr onclick="window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
-            <td>${escapeHtml(r.id)}</td>
-            <td>${escapeHtml(r.supplier_code)}</td>
-            <td>${escapeHtml(r.stock_code)}</td>
-            <td>${escapeHtml(r.description)}</td>
-            <td>${r.order_qty}</td>
-            <td>${r.accepted_qty}</td>
-            <td>${r.defected_qty}</td>
-            <td>${r.rejected_qty}</td>
-            <td><span class="badge badge-${r.status === 'approved' ? 'approved' : 'pending'}">${statusLabel(r.status)}</span></td>
-            <td>${fmtDateTimeTH(r.created_at)}</td>
-            ${isAdmin ? `<td class="row-actions">
+            <td data-label="NO.">${escapeHtml(r.id)}</td>
+            <td data-label="Supplier Item Code">${escapeHtml(r.supplier_code)}</td>
+            <td data-label="Stock Code">${escapeHtml(r.stock_code)}</td>
+            <td data-label="Description">${escapeHtml(r.description)}</td>
+            <td data-label="Order">${r.order_qty}</td>
+            <td data-label="Accepted">${r.accepted_qty}</td>
+            <td data-label="Defected">${r.defected_qty}</td>
+            <td data-label="Rejected">${r.rejected_qty}</td>
+            <td data-label="สถานะ"><span class="badge badge-${r.status === 'approved' ? 'approved' : 'pending'}">${statusLabel(r.status)}</span></td>
+            <td data-label="วันที่สร้าง">${fmtDateTimeTH(r.created_at)}</td>
+            ${isAdmin ? `<td class="row-actions" data-label="จัดการ">
               <button type="button" class="icon-btn" title="แก้ไข" data-act="edit" data-id="${escapeHtml(r.id)}">✏️</button>
               <button type="button" class="icon-btn" title="ลบ" data-act="delete" data-id="${escapeHtml(r.id)}">🗑</button>
             </td>` : ''}
@@ -101,7 +101,7 @@ listWrap.addEventListener('click', async (e) => {
   } else if (btn.dataset.act === 'delete') {
     if (!confirm(`ลบเอกสาร ${id} ถาวร? การกระทำนี้ย้อนกลับไม่ได้`)) return;
     const res = await API.deleteReport({ id });
-    if (res.success) { toast('ลบเอกสารแล้ว', 'success'); loadList(); }
+    if (res.success) { toast('ลบเอกสารแล้ว', 'success'); curPage = 1; loadList(); }
     else toast(res.message || 'ลบไม่สำเร็จ', 'error');
   }
 });
@@ -109,7 +109,7 @@ listWrap.addEventListener('click', async (e) => {
 const qInput = document.getElementById('q');
 const suggestEl = document.getElementById('searchSuggest');
 
-// สร้างคำแนะนำจาก Supplier Code / Supplier Name / Stock Code ที่มีอยู่จริงในข้อมูล ตรงกับที่พิมพ์
+// สร้างคำแนะนำจาก Supplier Item Code / Supplier Name / Stock Code ที่มีอยู่จริงในข้อมูล ตรงกับที่พิมพ์
 function renderSuggestions() {
   const q = qInput.value.trim().toLowerCase();
   if (!q) { suggestEl.classList.remove('show'); return; }
@@ -117,7 +117,7 @@ function renderSuggestions() {
   const seen = new Set();
   const matches = [];
   const fields = [
-    { key: 'supplier_code', tag: 'Supplier Code' },
+    { key: 'supplier_code', tag: 'Supplier Item Code' },
     { key: 'supplier_name', tag: 'Supplier Name' },
     { key: 'stock_code', tag: 'Stock Code' }
   ];

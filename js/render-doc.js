@@ -111,7 +111,7 @@ function buildDocHtml(report, items, opts) {
     </div>
 
     <div class="doc-grid">
-      <div class="row"><span class="k">Supplier Code</span><span class="v">${escapeHtml(report.supplier_code)}</span></div>
+      <div class="row"><span class="k">Supplier Item Code</span><span class="v">${escapeHtml(report.supplier_code)}</span></div>
       <div class="row"><span class="k">Supplier Name</span><span class="v">${escapeHtml(supplierName || '-')}</span></div>
       <div class="row"><span class="k">Stock Code</span><span class="v">${escapeHtml(report.stock_code)}</span></div>
       <div class="row"><span class="k">Date In</span><span class="v">${fmtDateTH(report.date_in)}</span></div>

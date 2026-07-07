@@ -207,6 +207,37 @@ table.report-table tbody tr:hover { background: #f7f9ff; }
 .doc-actions { text-align: center; margin: 20px 0; display: flex; gap: 10px; justify-content: center; }
 .pending-note { text-align: center; color: var(--orange); font-weight: 700; margin: 10px 0; }
 
+/* ====== Mobile (จอ ≤700px): topbar, ฟอร์มกรอกงาน, เอกสาร, ตารางรายงาน ====== */
+@media (max-width: 700px) {
+  .topbar { flex-wrap: wrap; row-gap: 8px; padding: 10px 14px; }
+  .topbar .brand { font-size: 14px; }
+  .topbar .brand small { font-size: 10px; }
+  .topbar nav { order: 3; width: 100%; justify-content: center; gap: 24px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .topbar .user-box #userName { display: none; } /* ซ่อนชื่อยาวๆ บนจอเล็ก เหลือแค่ badge role */
+  .container, .container-wide { padding: 12px; }
+  .card { padding: 14px; }
+
+  /* ฟอร์มกรอกใบตรวจ: type/reason/qty เรียงเป็นคอลัมน์เดียวแทนแถวเดียวกันที่คับแคบ */
+  .reason-block .reason-head { flex-direction: column; gap: 10px; }
+  .reason-block .reason-head > div { max-width: 100% !important; width: 100%; }
+  .reason-block .qty-field { width: 100%; }
+
+  /* เอกสาร (view/share/print) */
+  .doc-a4 { padding: 16px; }
+  .doc-grid { grid-template-columns: 1fr; gap: 0; }
+  .doc-summary { grid-template-columns: 1fr; gap: 8px; }
+  .doc-sign-row { grid-template-columns: 1fr; }
+  .doc-actions { flex-wrap: wrap; }
+
+  /* ตารางรายงาน → การ์ดแนวตั้ง อ่านง่ายบนมือถือ */
+  table.report-table thead { display: none; }
+  table.report-table, table.report-table tbody, table.report-table tr, table.report-table td { display: block; width: 100%; }
+  table.report-table tr { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #fff; }
+  table.report-table td { border: none; padding: 5px 0; display: flex; justify-content: space-between; gap: 10px; text-align: right; }
+  table.report-table td::before { content: attr(data-label); font-weight: 700; color: var(--muted); text-align: left; }
+  table.report-table td.row-actions { justify-content: flex-end; }
+}
+
 @media print {
   body { background: #fff; }
   .topbar, .doc-actions, .no-print { display: none !important; }

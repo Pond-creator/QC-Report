@@ -105,16 +105,19 @@ async function onShare() {
   if (!res.success) { toast(res.message || 'สร้างลิงก์ไม่สำเร็จ', 'error'); return; }
   // แชร์ไปตามภาษาที่กำลังดูอยู่ตอนนี้ (curLang) — คนรับลิงก์เห็นแค่ภาษานั้น ไม่มีปุ่มสลับให้
   const url = window.location.origin + window.location.pathname.replace(/view\.html$/, '') + 'share.html?token=' + res.token + '&lang=' + curLang;
-  showShareModal(url);
+  showShareModal(url, res);
 }
 
-function showShareModal(url) {
+function showShareModal(url, meta) {
   const overlay = document.createElement('div');
   overlay.className = 'sign-overlay';
+  const usageLine = meta
+    ? `ใช้ไปแล้ว ${meta.shareCount}/${meta.shareLimit} ครั้ง · ลิงก์นี้หมดอายุ ${fmtDateTimeTH(meta.expiresAt)}`
+    : '';
   overlay.innerHTML = `
     <div class="sign-modal">
       <div class="sign-modal-title">🔗 ลิงก์แชร์</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">คัดลอกไปส่งได้เลย — กดปุ่มแชร์ซ้ำจะได้ลิงก์ใหม่ ลิงก์เก่าจะใช้ไม่ได้ทันที</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">คัดลอกไปส่งได้เลย — กดปุ่มแชร์ซ้ำจะได้ลิงก์ใหม่ ลิงก์เก่าจะใช้ไม่ได้ทันที<br>${usageLine}</div>
       <input type="text" readonly value="${url.replace(/"/g, '&quot;')}" id="shareLinkInput" style="width:100%;box-sizing:border-box">
       <div class="sign-modal-actions">
         <button type="button" class="btn btn-ghost" data-act="close">ปิด</button>
