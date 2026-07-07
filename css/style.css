@@ -181,7 +181,7 @@ table.report-table tbody tr:hover { background: #f7f9ff; }
 .doc-head { text-align: center; position: relative; margin-bottom: 18px; }
 .doc-head .company { font-weight: 800; font-size: 18px; }
 .doc-head .title { font-weight: 700; margin-top: 4px; }
-.doc-head .no-box { position: absolute; top: 0; right: 0; border: 1.5px solid var(--ink); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+.doc-head .no-box { position: absolute; top: 0; right: 0; border: 1.5px solid var(--ink); border-radius: 6px; padding: 4px 10px; font-size: 13px; white-space: nowrap; }
 .doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-bottom: 14px; font-size: 14px; }
 .doc-grid .row { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--border); padding: 4px 0; }
 .doc-grid .row .k { color: var(--muted); }
@@ -224,6 +224,7 @@ table.report-table tbody tr:hover { background: #f7f9ff; }
 
   /* เอกสาร (view/share/print) */
   .doc-a4 { padding: 16px; }
+  .doc-head .no-box { position: static; display: inline-block; margin: 0 0 8px; } /* กัน NO. ทับชื่อบริษัท ให้ลงมาอยู่บรรทัดของตัวเอง */
   .doc-grid { grid-template-columns: 1fr; gap: 0; }
   .doc-summary { grid-template-columns: 1fr; gap: 8px; }
   .doc-sign-row { grid-template-columns: 1fr; }
@@ -269,14 +270,27 @@ table.report-table tbody tr:hover { background: #f7f9ff; }
 .icon-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px 6px; border-radius: 6px; }
 .icon-btn:hover { background: #f1f2f4; }
 
-/* ====== Photo hover-zoom preview (view.html / share.html) ====== */
-.doc-photo-grid img { cursor: zoom-in; }
+/* ====== Photo zoom preview (view.html / share.html) — hover ตามเมาส์ (เดสก์ท็อป) หรือแตะแล้วปักหมุดกลางจอ (มือถือ) ====== */
+.doc-photo-grid img {
+  cursor: zoom-in;
+  -webkit-touch-callout: none; /* กันเมนู "คัดลอก/ค้นดู" ของ iOS ตอนกดค้างที่รูป */
+  -webkit-user-select: none; user-select: none;
+}
 .photo-zoom-preview {
   position: fixed; z-index: 400; display: none; max-width: 560px; max-height: 560px;
   border: 3px solid #fff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.35); pointer-events: none; background: #fff;
 }
 .photo-zoom-preview.show { display: block; }
 .photo-zoom-preview img { display: block; max-width: 560px; max-height: 560px; border-radius: 4px; }
+/* โหมดปักหมุด (แตะที่รูป): ลอยกลางจอ มีฉากหลังคลุมทั้งจอ แตะที่ไหนก็ปิดได้ */
+.photo-zoom-preview.pinned {
+  top: 50% !important; left: 50% !important; transform: translate(-50%, -50%);
+  pointer-events: auto; max-width: 92vw; max-height: 85vh;
+}
+.photo-zoom-preview.pinned img { max-width: 92vw; max-height: 85vh; }
+.photo-zoom-preview.pinned::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; background: rgba(0,0,0,.55);
+}
 @media (max-width: 700px) {
-  .photo-zoom-preview, .photo-zoom-preview img { max-width: 90vw; max-height: 60vh; }
+  .photo-zoom-preview:not(.pinned), .photo-zoom-preview:not(.pinned) img { max-width: 90vw; max-height: 60vh; }
 }

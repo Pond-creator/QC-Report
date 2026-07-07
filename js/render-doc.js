@@ -18,8 +18,10 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// ====== hover-zoom popup รูป (ใช้ร่วมกันทุกรูปในเอกสาร) ======
-let _zoomEl = null;
+// ====== พรีวิวรูปขยาย (ใช้ร่วมกันทุกรูปในเอกสาร) ======
+// เดสก์ท็อป: ชี้เมาส์ (hover) ขึ้นพรีวิวลอยตามเคอร์เซอร์
+// มือถือ/แตะ: กดที่รูป = พรีวิวขยายกลางจอค้างไว้ (ปักหมุด) แตะที่ไหนก็ได้เพื่อปิด — ไม่เปิดลิงก์รูปแยกออกจากหน้าอีกต่อไป
+let _zoomEl = null, _zoomPinned = false;
 function _ensureZoom() {
   if (_zoomEl) return _zoomEl;
   _zoomEl = document.createElement('div');
@@ -28,13 +30,14 @@ function _ensureZoom() {
   return _zoomEl;
 }
 function showZoom(url, evt) {
+  if (_zoomPinned) return; // ปักหมุดอยู่ ไม่ให้ hover มาแทนที่
   const el = _ensureZoom();
   el.innerHTML = `<img src="${url}">`;
   el.classList.add('show');
   moveZoom(evt);
 }
 function moveZoom(evt) {
-  if (!_zoomEl || !_zoomEl.classList.contains('show')) return;
+  if (!_zoomEl || _zoomPinned || !_zoomEl.classList.contains('show')) return;
   const pad = 18;
   const size = Math.min(560, window.innerWidth * 0.9, window.innerHeight * 0.6);
   let x = evt.clientX + pad, y = evt.clientY + pad;
@@ -44,7 +47,19 @@ function moveZoom(evt) {
   _zoomEl.style.top = Math.max(4, y) + 'px';
 }
 function hideZoom() {
-  if (_zoomEl) _zoomEl.classList.remove('show');
+  if (_zoomEl && !_zoomPinned) _zoomEl.classList.remove('show');
+}
+function pinZoom(url) {
+  const el = _ensureZoom();
+  el.innerHTML = `<img src="${url}">`;
+  el.style.left = ''; el.style.top = ''; // เคลียร์ตำแหน่งจากโหมด hover ให้ CSS จัดกลางจอแทน
+  el.classList.add('show', 'pinned');
+  _zoomPinned = true;
+}
+function unpinZoom() {
+  if (!_zoomEl) return;
+  _zoomEl.classList.remove('show', 'pinned');
+  _zoomPinned = false;
 }
 
 // event delegation ครั้งเดียว (แทน inline onmouseenter ที่ฝัง URL ใน HTML attribute — เสี่ยงเพี้ยนกับ URL ที่มี & หลายตัว)
@@ -61,7 +76,8 @@ document.addEventListener('mouseout', (e) => {
 });
 document.addEventListener('click', (e) => {
   const img = e.target.closest('.doc-photo-grid img');
-  if (img) window.open(img.src, '_blank');
+  if (img) { e.preventDefault(); pinZoom(img.src); return; }
+  if (_zoomPinned) unpinZoom();
 });
 
 function photoFigure(url, label) {
