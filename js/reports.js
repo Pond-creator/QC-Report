@@ -39,6 +39,7 @@ function render() {
     rows = rows.filter(r =>
       String(r.id).toLowerCase().includes(q) ||
       String(r.supplier_code).toLowerCase().includes(q) ||
+      String(r.supplier_name).toLowerCase().includes(q) ||
       String(r.stock_code).toLowerCase().includes(q) ||
       String(r.ean13).toLowerCase().includes(q) ||
       String(r.description).toLowerCase().includes(q)
@@ -105,7 +106,56 @@ listWrap.addEventListener('click', async (e) => {
   }
 });
 
-document.getElementById('q').addEventListener('input', () => { curPage = 1; render(); });
+const qInput = document.getElementById('q');
+const suggestEl = document.getElementById('searchSuggest');
+
+// สร้างคำแนะนำจาก Supplier Code / Supplier Name / Stock Code ที่มีอยู่จริงในข้อมูล ตรงกับที่พิมพ์
+function renderSuggestions() {
+  const q = qInput.value.trim().toLowerCase();
+  if (!q) { suggestEl.classList.remove('show'); return; }
+
+  const seen = new Set();
+  const matches = [];
+  const fields = [
+    { key: 'supplier_code', tag: 'Supplier Code' },
+    { key: 'supplier_name', tag: 'Supplier Name' },
+    { key: 'stock_code', tag: 'Stock Code' }
+  ];
+  for (const r of all) {
+    for (const f of fields) {
+      const v = String(r[f.key] || '').trim();
+      if (v && v.toLowerCase().includes(q) && v.toLowerCase() !== q) {
+        const dedupeKey = f.key + ':' + v.toLowerCase();
+        if (!seen.has(dedupeKey)) { seen.add(dedupeKey); matches.push({ value: v, tag: f.tag }); }
+      }
+    }
+    if (matches.length >= 8) break;
+  }
+
+  if (!matches.length) { suggestEl.classList.remove('show'); return; }
+  suggestEl.innerHTML = matches.map(m =>
+    `<div class="suggest-item" data-value="${escapeHtml(m.value)}"><span>${escapeHtml(m.value)}</span><span class="tag">${m.tag}</span></div>`
+  ).join('');
+  suggestEl.classList.add('show');
+}
+
+suggestEl.addEventListener('mousedown', (e) => {
+  const item = e.target.closest('.suggest-item');
+  if (!item) return;
+  e.preventDefault();
+  qInput.value = item.dataset.value;
+  suggestEl.classList.remove('show');
+  curPage = 1;
+  render();
+});
+
+document.addEventListener('click', (e) => {
+  if (e.target !== qInput && !suggestEl.contains(e.target)) suggestEl.classList.remove('show');
+});
+
+qInput.addEventListener('input', () => { curPage = 1; render(); renderSuggestions(); });
+qInput.addEventListener('focus', renderSuggestions);
+qInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') suggestEl.classList.remove('show'); });
 document.getElementById('statusFilter').addEventListener('change', () => { curPage = 1; render(); });
 
 loadList();

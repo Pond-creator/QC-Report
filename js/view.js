@@ -103,8 +103,43 @@ async function onToggleLang() {
 async function onShare() {
   const res = await API.shareReport({ id: curReport.id });
   if (!res.success) { toast(res.message || 'สร้างลิงก์ไม่สำเร็จ', 'error'); return; }
-  const url = window.location.origin + window.location.pathname.replace(/view\.html$/, '') + 'share.html?token=' + res.token;
-  window.prompt('ลิงก์แชร์ (คัดลอกไปส่งได้เลย — กดปุ่มนี้ซ้ำจะได้ลิงก์ใหม่ ลิงก์เก่าจะใช้ไม่ได้ทันที):', url);
+  // แชร์ไปตามภาษาที่กำลังดูอยู่ตอนนี้ (curLang) — คนรับลิงก์เห็นแค่ภาษานั้น ไม่มีปุ่มสลับให้
+  const url = window.location.origin + window.location.pathname.replace(/view\.html$/, '') + 'share.html?token=' + res.token + '&lang=' + curLang;
+  showShareModal(url);
+}
+
+function showShareModal(url) {
+  const overlay = document.createElement('div');
+  overlay.className = 'sign-overlay';
+  overlay.innerHTML = `
+    <div class="sign-modal">
+      <div class="sign-modal-title">🔗 ลิงก์แชร์</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">คัดลอกไปส่งได้เลย — กดปุ่มแชร์ซ้ำจะได้ลิงก์ใหม่ ลิงก์เก่าจะใช้ไม่ได้ทันที</div>
+      <input type="text" readonly value="${url.replace(/"/g, '&quot;')}" id="shareLinkInput" style="width:100%;box-sizing:border-box">
+      <div class="sign-modal-actions">
+        <button type="button" class="btn btn-ghost" data-act="close">ปิด</button>
+        <button type="button" class="btn btn-primary" data-act="copy">📋 คัดลอกลิงก์</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const input = overlay.querySelector('#shareLinkInput');
+  input.addEventListener('click', () => input.select());
+
+  overlay.addEventListener('click', async (e) => {
+    const act = e.target.dataset.act;
+    if (act === 'close' || e.target === overlay) { overlay.remove(); }
+    else if (act === 'copy') {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast('คัดลอกลิงก์แล้ว', 'success');
+      } catch (err) {
+        input.select();
+        document.execCommand('copy');
+        toast('คัดลอกลิงก์แล้ว', 'success');
+      }
+    }
+  });
 }
 
 load();

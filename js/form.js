@@ -30,7 +30,7 @@ const editId = new URLSearchParams(window.location.search).get('id');
 let items = [];
 let verifiedSign = null;
 
-function newItem() { return { type: 'Defected', reason_text: '', qty: '', photos: [], video: null, videoName: '' }; }
+function newItem() { return { type: 'Defected', reason_text: '', qty: '', photos: [], videos: [] }; }
 
 const reasonListEl = document.getElementById('reasonList');
 
@@ -78,12 +78,15 @@ function renderItems() {
           </div>`).join('')}
       </div>
       <button type="button" class="btn btn-ghost btn-sm" data-act="addPair" data-i="${i}">+ เพิ่มรูป</button>
-      <div class="video-slot">
-        <label style="margin:0">แนบวิดีโอ (คลิป):</label>
+      <div class="video-section">
+        <label style="margin:0 0 8px;display:block">แนบวิดีโอ (คลิป):</label>
+        ${it.videos.length ? it.videos.map((v, vi) => `
+          <div class="video-slot">
+            <span class="video-name">${escapeHtml(v.name || ('คลิปที่ ' + (vi + 1)))}</span>
+            <button type="button" class="pair-remove" data-act="removeVideo" data-i="${i}" data-vi="${vi}" title="ลบคลิป">&times;</button>
+          </div>`).join('') : `<div class="video-slot"><span class="video-name empty">ยังไม่แนบคลิป</span></div>`}
         <input type="file" accept="video/*" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('video-${i}').click()">เลือกไฟล์วิดีโอ</button>
-        <span class="video-name ${it.videoName ? '' : 'empty'}">${escapeHtml(it.videoName || 'ยังไม่แนบคลิป')}</span>
-        ${it.videoName ? `<button type="button" class="pair-remove" data-act="removeVideo" data-i="${i}" title="ลบคลิป">&times;</button>` : ''}
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('video-${i}').click()">+ เลือกไฟล์วิดีโอ</button>
       </div>
     </div>
   `).join('');
@@ -127,8 +130,7 @@ reasonListEl.addEventListener('change', async (e) => {
     if (!file) return;
     if (file.size > 30 * 1024 * 1024) toast('ไฟล์วิดีโอใหญ่เกิน 30MB อาจอัปโหลดไม่สำเร็จ', 'error');
     const dataUrl = await fileToDataUrl(file);
-    items[i].video = dataUrl;
-    items[i].videoName = file.name;
+    items[i].videos.push({ data: dataUrl, name: file.name });
     renderItems();
   }
 });
@@ -141,7 +143,7 @@ reasonListEl.addEventListener('click', (e) => {
   else if (act === 'addPair') { items[i].photos.push({ closeup: null, overview: null }); renderItems(); }
   else if (act === 'removePair') { items[i].photos.splice(e.target.dataset.pi, 1); renderItems(); }
   else if (act === 'removePhoto') { items[i].photos[e.target.dataset.pi][e.target.dataset.slot] = null; renderItems(); }
-  else if (act === 'removeVideo') { items[i].video = null; items[i].videoName = ''; renderItems(); }
+  else if (act === 'removeVideo') { items[i].videos.splice(e.target.dataset.vi, 1); renderItems(); }
 });
 
 // ====== signature ======
@@ -176,7 +178,7 @@ document.getElementById('btnSubmit').addEventListener('click', async () => {
   const itemsPayload = items.map(it => ({
     type: it.type, reason_text: it.reason_text.trim(), qty: num(it.qty),
     photos: it.photos.filter(p => p.closeup || p.overview),
-    video: it.video || null
+    videos: it.videos.map(v => v.data)
   }));
 
   if (editId) {
@@ -228,8 +230,7 @@ async function loadForEdit(id) {
   items = (res.items || []).map(it => ({
     type: it.type, reason_text: it.reason_text || '', qty: it.qty,
     photos: (it.photos || []).map(p => ({ closeup: p.closeup || null, overview: p.overview || null })),
-    video: it.video_url || null,
-    videoName: it.video_url ? 'ไฟล์วิดีโอเดิม (เลือกใหม่เพื่อเปลี่ยน)' : ''
+    videos: (it.video_urls || []).map((url, vi) => ({ data: url, name: 'คลิปเดิมที่ ' + (vi + 1) }))
   }));
   renderItems();
 

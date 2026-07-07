@@ -36,9 +36,10 @@ function showZoom(url, evt) {
 function moveZoom(evt) {
   if (!_zoomEl || !_zoomEl.classList.contains('show')) return;
   const pad = 18;
+  const size = Math.min(560, window.innerWidth * 0.9, window.innerHeight * 0.6);
   let x = evt.clientX + pad, y = evt.clientY + pad;
-  if (x + 320 > window.innerWidth) x = evt.clientX - 320 - pad;
-  if (y + 320 > window.innerHeight) y = evt.clientY - 320 - pad;
+  if (x + size > window.innerWidth) x = evt.clientX - size - pad;
+  if (y + size > window.innerHeight) y = evt.clientY - size - pad;
   _zoomEl.style.left = Math.max(4, x) + 'px';
   _zoomEl.style.top = Math.max(4, y) + 'px';
 }
@@ -81,7 +82,7 @@ function reasonItemHtml(it, idx, lang) {
         <div><b>Qty:</b> ${it.qty} Pcs</div>
       </div>
       ${photosHtml ? `<div class="doc-photo-grid">${photosHtml}</div>` : ''}
-      ${it.video_url ? `<div class="doc-clip">link clip: <a href="${it.video_url}" target="_blank" rel="noopener">${it.video_url}</a></div>` : ''}
+      ${(it.video_urls || []).map(url => `<div class="doc-clip">link clip: <a href="${url}" target="_blank" rel="noopener">${url}</a></div>`).join('')}
     </div>`;
 }
 

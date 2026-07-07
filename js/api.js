@@ -5,13 +5,13 @@
 // <<< URL ของ Web App หลัง Deploy GAS >>>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxXX9kC5Eg0Aew0UWY6tewJPVBhNRt7RSBaxuwLyziDnrag4W6e-Q3FlOtSMqWdYXVd/exec';
 
-// ====== Global loading overlay ======
-let _loaderEl = null, _loaderCount = 0;
+// ====== Global loading overlay (มีตัวเลข % วิ่งขึ้นเรื่อยๆ กันรู้สึกค้าง) ======
+let _loaderEl = null, _loaderTimer = null, _loaderPct = 0, _loaderCount = 0;
 function _ensureLoader() {
   if (_loaderEl) return _loaderEl;
   _loaderEl = document.createElement('div');
   _loaderEl.className = 'app-loader';
-  _loaderEl.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div></div><div class="lbl">กำลังบันทึก...</div>`;
+  _loaderEl.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div><span class="pct">0%</span></div><div class="lbl">กำลังบันทึก...</div>`;
   document.body.appendChild(_loaderEl);
   return _loaderEl;
 }
@@ -20,11 +20,23 @@ function showLoader(label) {
   el.querySelector('.lbl').textContent = label || 'กำลังบันทึก...';
   _loaderCount++;
   el.classList.add('show');
+  _loaderPct = 0;
+  el.querySelector('.pct').textContent = '0%';
+  clearInterval(_loaderTimer);
+  _loaderTimer = setInterval(() => {
+    if (_loaderPct < 95) {
+      _loaderPct += Math.max(1, Math.round((95 - _loaderPct) * 0.09));
+      el.querySelector('.pct').textContent = Math.min(_loaderPct, 99) + '%';
+    }
+  }, 110);
 }
 function hideLoader() {
   if (_loaderCount > 0) _loaderCount--;
   if (_loaderCount > 0 || !_loaderEl) return;
-  _loaderEl.classList.remove('show');
+  clearInterval(_loaderTimer);
+  _loaderEl.querySelector('.pct').textContent = '100%';
+  const el = _loaderEl;
+  setTimeout(() => { if (_loaderCount === 0) el.classList.remove('show'); }, 200);
 }
 
 async function apiCall(action, data = {}, opts = {}) {
