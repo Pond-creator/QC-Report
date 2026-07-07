@@ -127,7 +127,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .photo-slot .rm { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.55); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; z-index: 2; }
 .pair-remove { align-self: center; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; }
 
-.video-slot { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.video-slot { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border); }
 .video-slot .video-name { font-size: 13px; color: var(--primary); }
 .video-slot .video-name.empty { color: var(--muted); }
 
@@ -216,3 +216,20 @@ table.report-table tbody tr:hover { background: #f7f9ff; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast-error { background: var(--red); }
 .toast-success { background: var(--green); }
+
+/* ====== Reports pagination ====== */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+/* ====== Reports table row actions (admin edit/delete) ====== */
+.row-actions { white-space: nowrap; }
+.icon-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px 6px; border-radius: 6px; }
+.icon-btn:hover { background: #f1f2f4; }
+
+/* ====== Photo hover-zoom preview (view.html / share.html) ====== */
+.doc-photo-grid img { cursor: zoom-in; }
+.photo-zoom-preview {
+  position: fixed; z-index: 400; display: none; max-width: 320px; max-height: 320px;
+  border: 3px solid #fff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.35); pointer-events: none; background: #fff;
+}
+.photo-zoom-preview.show { display: block; }
+.photo-zoom-preview img { display: block; max-width: 320px; max-height: 320px; border-radius: 4px; }

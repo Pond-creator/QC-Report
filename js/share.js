@@ -31,13 +31,10 @@ function render() {
 
 async function onToggleLang() {
   const wantEn = curLang === 'th';
-  if (wantEn) {
-    const needsTranslate = !curReport.description_en || curItems.some(it => it.reason_text && !it.reason_text_en);
-    if (needsTranslate) {
-      const res = await apiCallPublic('getSharedReport', { token, translate: true });
-      if (!res.success) { toast(res.message || 'แปลภาษาไม่สำเร็จ', 'error'); return; }
-      curReport = res.report; curItems = res.items;
-    }
+  if (wantEn && needsTranslation(curReport, curItems)) {
+    const res = await apiCallPublic('getSharedReport', { token, translate: true });
+    if (!res.success) { toast(res.message || 'แปลภาษาไม่สำเร็จ', 'error'); return; }
+    curReport = res.report; curItems = res.items;
   }
   curLang = wantEn ? 'en' : 'th';
   render();

@@ -90,14 +90,11 @@ function render() {
 
 async function onToggleLang() {
   const wantEn = curLang === 'th';
-  if (wantEn) {
-    const needsTranslate = !curReport.description_en || curItems.some(it => it.reason_text && !it.reason_text_en);
-    if (needsTranslate) {
-      const res = await API.translateReport({ id: curReport.id });
-      if (!res.success) { toast(res.message || 'แปลภาษาไม่สำเร็จ', 'error'); return; }
-      curReport = Object.assign({}, curReport, { description_en: res.report.description_en });
-      curItems = res.items;
-    }
+  if (wantEn && needsTranslation(curReport, curItems)) {
+    const res = await API.translateReport({ id: curReport.id });
+    if (!res.success) { toast(res.message || 'แปลภาษาไม่สำเร็จ', 'error'); return; }
+    curReport = Object.assign({}, curReport, { description_en: res.report.description_en, supplier_name_en: res.report.supplier_name_en });
+    curItems = res.items;
   }
   curLang = wantEn ? 'en' : 'th';
   render();

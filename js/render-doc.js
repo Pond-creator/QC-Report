@@ -7,6 +7,13 @@ const DOC_LABELS = {
   en: { title: 'Quality Control Report (QC REPORT)', noItems: 'No defects found — product fully accepted', reasonHeading: 'Reason for Defected and Rejected', overview: 'overview' }
 };
 
+// เช็คว่ามีเนื้อหาที่ยังไม่ได้แปล (ไทย→อังกฤษ) ค้างอยู่ไหม — ใช้ตัดสินใจว่าต้องเรียก translateReport ก่อนสลับไปโหมด EN หรือไม่
+function needsTranslation(report, items) {
+  return (!!report.description && !report.description_en) ||
+    (!!report.supplier_name && !report.supplier_name_en) ||
+    (items || []).some(it => it.reason_text && !it.reason_text_en);
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -39,11 +46,25 @@ function hideZoom() {
   if (_zoomEl) _zoomEl.classList.remove('show');
 }
 
+// event delegation ครั้งเดียว (แทน inline onmouseenter ที่ฝัง URL ใน HTML attribute — เสี่ยงเพี้ยนกับ URL ที่มี & หลายตัว)
+document.addEventListener('mouseover', (e) => {
+  const img = e.target.closest('.doc-photo-grid img');
+  if (img) showZoom(img.src, e);
+});
+document.addEventListener('mousemove', (e) => {
+  if (e.target.closest('.doc-photo-grid img')) moveZoom(e);
+});
+document.addEventListener('mouseout', (e) => {
+  const img = e.target.closest('.doc-photo-grid img');
+  if (img && (!e.relatedTarget || !e.relatedTarget.closest('.doc-photo-grid img'))) hideZoom();
+});
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('.doc-photo-grid img');
+  if (img) window.open(img.src, '_blank');
+});
+
 function photoFigure(url, label) {
-  return `<figure>
-    <img src="${url}" onmouseenter="showZoom('${url}', event)" onmousemove="moveZoom(event)" onmouseleave="hideZoom()" onclick="window.open('${url}','_blank')">
-    <figcaption>${label}</figcaption>
-  </figure>`;
+  return `<figure><img src="${url}"><figcaption>${label}</figcaption></figure>`;
 }
 
 function reasonItemHtml(it, idx, lang) {
@@ -78,6 +99,7 @@ function buildDocHtml(report, items, opts) {
   const lang = (opts && opts.lang) || 'th';
   const L = DOC_LABELS[lang];
   const description = (lang === 'en' && report.description_en) ? report.description_en : report.description;
+  const supplierName = (lang === 'en' && report.supplier_name_en) ? report.supplier_name_en : report.supplier_name;
   const approvedBoxHtml = (opts && opts.approvedBoxHtml) || signBoxHtml('Approved by', report.approved_by, report.approved_sign_url, report.approved_date);
 
   return `
@@ -89,7 +111,7 @@ function buildDocHtml(report, items, opts) {
 
     <div class="doc-grid">
       <div class="row"><span class="k">Supplier Code</span><span class="v">${escapeHtml(report.supplier_code)}</span></div>
-      <div class="row"><span class="k">Supplier Name</span><span class="v">${escapeHtml(report.supplier_name || '-')}</span></div>
+      <div class="row"><span class="k">Supplier Name</span><span class="v">${escapeHtml(supplierName || '-')}</span></div>
       <div class="row"><span class="k">Stock Code</span><span class="v">${escapeHtml(report.stock_code)}</span></div>
       <div class="row"><span class="k">Date In</span><span class="v">${fmtDateTH(report.date_in)}</span></div>
       <div class="row"><span class="k">EAN 13 Code</span><span class="v">${escapeHtml(report.ean13 || '-')}</span></div>

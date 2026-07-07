@@ -9,6 +9,8 @@ document.getElementById('userRole').textContent = Auth.getRoleLabel((Auth.getUse
 
 const listWrap = document.getElementById('listWrap');
 let all = [];
+const PAGE_SIZE = 50;
+let curPage = 1;
 
 // monitor เห็นได้แค่เอกสารที่อนุมัติแล้ว (เซ็นครบ) — เซิร์ฟเวอร์บังคับอยู่แล้ว, ล็อก UI ให้ตรงกันด้วย
 if ((Auth.getUser() || {}).role === 'monitor') {
@@ -45,6 +47,9 @@ function render() {
   if (!rows.length) { listWrap.innerHTML = `<div class="empty-state">ไม่พบเอกสาร</div>`; return; }
 
   const isAdmin = (Auth.getUser() || {}).role === 'admin';
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  if (curPage > totalPages) curPage = totalPages;
+  const pageRows = rows.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
 
   listWrap.innerHTML = `
     <table class="report-table">
@@ -56,7 +61,7 @@ function render() {
         </tr>
       </thead>
       <tbody>
-        ${rows.map(r => `
+        ${pageRows.map(r => `
           <tr onclick="window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
             <td>${escapeHtml(r.id)}</td>
             <td>${escapeHtml(r.supplier_code)}</td>
@@ -74,7 +79,15 @@ function render() {
             </td>` : ''}
           </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    <div class="pagination">
+      <button type="button" class="btn btn-ghost btn-sm" id="btnPrevPage" ${curPage <= 1 ? 'disabled' : ''}>← ก่อนหน้า</button>
+      <span>หน้า ${curPage} / ${totalPages} (ทั้งหมด ${rows.length} รายการ)</span>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnNextPage" ${curPage >= totalPages ? 'disabled' : ''}>ถัดไป →</button>
+    </div>`;
+
+  document.getElementById('btnPrevPage').addEventListener('click', () => { curPage--; render(); });
+  document.getElementById('btnNextPage').addEventListener('click', () => { curPage++; render(); });
 }
 
 listWrap.addEventListener('click', async (e) => {
@@ -92,7 +105,7 @@ listWrap.addEventListener('click', async (e) => {
   }
 });
 
-document.getElementById('q').addEventListener('input', render);
-document.getElementById('statusFilter').addEventListener('change', render);
+document.getElementById('q').addEventListener('input', () => { curPage = 1; render(); });
+document.getElementById('statusFilter').addEventListener('change', () => { curPage = 1; render(); });
 
 loadList();

@@ -61,25 +61,25 @@ function renderItems() {
           </select>
         </div>
         <div class="field">
-          <label>Reason for ${it.type} <span class="req">*</span></label>
+          <label>สาเหตุที่ ${it.type} <span class="req">*</span></label>
           <input type="text" data-act="reason" data-i="${i}" value="${escapeHtml(it.reason_text)}" placeholder="ระบุสาเหตุ">
         </div>
         <div class="field qty-field">
-          <label>Qty <span class="req">*</span></label>
+          <label>จำนวน (ชิ้น) <span class="req">*</span></label>
           <input type="number" min="0" class="type-${it.type}" data-act="qty" data-i="${i}" value="${it.qty}">
         </div>
       </div>
       <div class="photo-pairs">
         ${it.photos.map((p, pi) => `
           <div class="photo-pair" data-pi="${pi}">
-            ${photoSlot(i, pi, 'closeup', p.closeup, 'photo defected/\nrejected shot only')}
-            ${photoSlot(i, pi, 'overview', p.overview, 'photo all of\ndefected/rejected shot')}
+            ${photoSlot(i, pi, 'closeup', p.closeup, 'ถ่ายจุดที่เสีย/\nถูกปฏิเสธ')}
+            ${photoSlot(i, pi, 'overview', p.overview, 'ถ่ายภาพรวม\nทั้งชิ้น')}
             <button type="button" class="pair-remove" data-act="removePair" data-i="${i}" data-pi="${pi}" title="ลบคู่รูปนี้">&times;</button>
           </div>`).join('')}
       </div>
       <button type="button" class="btn btn-ghost btn-sm" data-act="addPair" data-i="${i}">+ เพิ่มรูป</button>
       <div class="video-slot">
-        <label style="margin:0">link clip:</label>
+        <label style="margin:0">แนบวิดีโอ (คลิป):</label>
         <input type="file" accept="video/*" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
         <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('video-${i}').click()">เลือกไฟล์วิดีโอ</button>
         <span class="video-name ${it.videoName ? '' : 'empty'}">${escapeHtml(it.videoName || 'ยังไม่แนบคลิป')}</span>
