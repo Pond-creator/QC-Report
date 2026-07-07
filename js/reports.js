@@ -56,7 +56,7 @@ function render() {
     <table class="report-table">
       <thead>
         <tr>
-          <th>NO.</th><th>Supplier Item Code</th><th>Stock Code</th><th>Description</th>
+          <th>NO.</th><th>Supplier Item Code</th><th>Supplier Name</th><th>Stock Code</th><th>Description</th>
           <th>Order</th><th>Accepted</th><th>Defected</th><th>Rejected</th>
           <th>สถานะ</th><th>วันที่สร้าง</th>${isAdmin ? '<th>จัดการ</th>' : ''}
         </tr>
@@ -66,6 +66,7 @@ function render() {
           <tr onclick="window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
             <td data-label="NO.">${escapeHtml(r.id)}</td>
             <td data-label="Supplier Item Code">${escapeHtml(r.supplier_code)}</td>
+            <td data-label="Supplier Name">${escapeHtml(r.supplier_name)}</td>
             <td data-label="Stock Code">${escapeHtml(r.stock_code)}</td>
             <td data-label="Description">${escapeHtml(r.description)}</td>
             <td data-label="Order">${r.order_qty}</td>
