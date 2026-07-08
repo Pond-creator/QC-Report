@@ -25,39 +25,39 @@
   <div class="container">
     <div class="card">
       <h2 id="pageTitle">ใบตรวจสอบคุณภาพสินค้า (QC Report)</h2>
-      <div class="grid-2">
-        <div class="field field-red">
+      <div class="grid-2 form-fields">
+        <div class="field field-red f-supplier-code">
           <label>Supplier Item Code <span class="req">*</span></label>
           <input type="text" id="supplier_code">
         </div>
-        <div class="field field-red">
+        <div class="field field-red f-supplier-name">
           <label>Supplier Name</label>
           <input type="text" id="supplier_name">
         </div>
-        <div class="field field-red">
+        <div class="field field-red f-stock-code">
           <label>Stock Code <span class="req">*</span></label>
           <input type="text" id="stock_code">
         </div>
-        <div class="field field-red">
+        <div class="field field-red f-date-in">
           <label>Date สินค้าเข้า (Date In) <span class="req">*</span></label>
           <input type="text" id="date_in" placeholder="เลือกวันที่" readonly>
         </div>
-        <div class="field field-red">
+        <div class="field field-red f-ean13">
           <label>EAN 13 Code</label>
           <input type="text" id="ean13">
         </div>
-        <div class="field field-red">
+        <div class="field field-red f-date-qa">
           <label>Date QA สินค้า (QA Date) <span class="req">*</span></label>
           <input type="text" id="date_qa" placeholder="เลือกวันที่" readonly>
         </div>
-      </div>
-      <div class="field field-red">
-        <label>Order (Pcs) <span class="req">*</span></label>
-        <input type="number" min="0" id="order_qty" value="0">
-      </div>
-      <div class="field field-red">
-        <label>Description <span class="req">*</span></label>
-        <input type="text" id="description">
+        <div class="field field-red f-order full-row">
+          <label>Order (Pcs) <span class="req">*</span></label>
+          <input type="number" min="0" id="order_qty" value="0">
+        </div>
+        <div class="field field-red f-description full-row">
+          <label>Description <span class="req">*</span></label>
+          <input type="text" id="description">
+        </div>
       </div>
 
       <div class="summary-row">

@@ -147,6 +147,89 @@ function compressImage(file, maxDim = 1280, quality = 0.75) {
   });
 }
 
+// บีบอัดวิดีโอฝั่ง client ก่อนอัปโหลด (ย่อความละเอียด + re-encode บิตเรตต่ำผ่าน canvas+MediaRecorder)
+// คืน dataURL ถ้าบีบสำเร็จ, คืน null ถ้าเบราว์เซอร์ไม่รองรับ/บีบไม่สำเร็จ (ผู้เรียกต้อง fallback ไปใช้ไฟล์เดิม)
+function compressVideo(file, maxDim = 640, fps = 24, videoBitsPerSecond = 800000) {
+  return new Promise((resolve) => {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { resolve(null); return; }
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(drawTimer);
+      URL.revokeObjectURL(video.src);
+      video.remove();
+      resolve(result);
+    };
+
+    const video = document.createElement('video');
+    video.muted = true; video.playsInline = true; video.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    video.src = URL.createObjectURL(file);
+    document.body.appendChild(video);
+
+    let drawTimer;
+    const timeoutGuard = setTimeout(() => finish(null), 90000); // กันค้างถ้าวิดีโอยาวผิดปกติ/ติดขัด
+
+    video.addEventListener('error', () => { clearTimeout(timeoutGuard); finish(null); });
+
+    video.addEventListener('loadedmetadata', () => {
+      const w0 = video.videoWidth, h0 = video.videoHeight;
+      if (!w0 || !h0) { clearTimeout(timeoutGuard); finish(null); return; }
+      let w = w0, h = h0;
+      if (w > maxDim || h > maxDim) {
+        const scale = maxDim / Math.max(w, h);
+        w = Math.round(w * scale); h = Math.round(h * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      let audioTracks = [];
+      try { audioTracks = video.captureStream ? video.captureStream().getAudioTracks() : []; } catch (e) { /* ไม่มีเสียงก็ไม่เป็นไร */ }
+
+      let combined;
+      try {
+        const canvasStream = canvas.captureStream(fps);
+        combined = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
+      } catch (e) { clearTimeout(timeoutGuard); finish(null); return; }
+
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus'
+        : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
+      if (!mimeType) { clearTimeout(timeoutGuard); finish(null); return; }
+
+      let recorder;
+      try { recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond }); }
+      catch (e) { clearTimeout(timeoutGuard); finish(null); return; }
+
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        clearTimeout(timeoutGuard);
+        if (!chunks.length) { finish(null); return; }
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.onload = () => finish(reader.result);
+        reader.onerror = () => finish(null);
+        reader.readAsDataURL(blob);
+      };
+
+      video.addEventListener('play', () => {
+        drawTimer = setInterval(() => {
+          if (video.paused || video.ended) return;
+          try { ctx.drawImage(video, 0, 0, w, h); } catch (e) { /* เฟรมข้ามได้ ไม่ critical */ }
+        }, 1000 / fps);
+      });
+      video.addEventListener('ended', () => { if (recorder.state !== 'inactive') recorder.stop(); });
+
+      try {
+        recorder.start();
+        video.currentTime = 0;
+        video.play().catch(() => { clearTimeout(timeoutGuard); finish(null); });
+      } catch (e) { clearTimeout(timeoutGuard); finish(null); }
+    });
+  });
+}
+
 // จัดรูปแบบวันที่ yyyy-MM-dd (เก็บ) → dd/MM/yyyy (แสดง)
 function fmtDateTH(ymd) {
   if (!ymd) return '-';

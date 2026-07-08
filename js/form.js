@@ -39,7 +39,7 @@ function photoSlot(i, pi, slot, dataUrl, label) {
     ${dataUrl
       ? `<img src="${dataUrl}"><button type="button" class="rm" data-act="removePhoto" data-i="${i}" data-pi="${pi}" data-slot="${slot}">&times;</button>`
       : `<span>${label}</span>`}
-    <input type="file" accept="image/*" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}">
+    <input type="file" accept="image/*" capture="environment" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}">
   </div>`;
 }
 
@@ -85,7 +85,7 @@ function renderItems() {
             <span class="video-name">${escapeHtml(v.name || ('คลิปที่ ' + (vi + 1)))}</span>
             <button type="button" class="pair-remove" data-act="removeVideo" data-i="${i}" data-vi="${vi}" title="ลบคลิป">&times;</button>
           </div>`).join('') : `<div class="video-slot"><span class="video-name empty">ยังไม่แนบคลิป</span></div>`}
-        <input type="file" accept="video/*" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
+        <input type="file" accept="video/*" capture="environment" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
         <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('video-${i}').click()">+ เลือกไฟล์วิดีโอ</button>
       </div>
     </div>
@@ -128,8 +128,18 @@ reasonListEl.addEventListener('change', async (e) => {
   } else if (act === 'video') {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 30 * 1024 * 1024) toast('ไฟล์วิดีโอใหญ่เกิน 30MB อาจอัปโหลดไม่สำเร็จ', 'error');
-    const dataUrl = await fileToDataUrl(file);
+    let dataUrl;
+    if (file.size > 5 * 1024 * 1024) {
+      // ไฟล์ใหญ่พอสมควร → ลองบีบอัดก่อน (ย่อความละเอียด+บิตเรตต่ำ) ถ้าเบราว์เซอร์ไม่รองรับจะ fallback ไปใช้ไฟล์เดิม
+      showLoader('กำลังบีบอัดวิดีโอ...');
+      const compressed = await compressVideo(file);
+      hideLoader();
+      dataUrl = compressed || await fileToDataUrl(file);
+      if (!compressed) toast('เบราว์เซอร์นี้บีบอัดวิดีโอไม่ได้ ใช้ไฟล์ต้นฉบับแทน', 'info');
+    } else {
+      dataUrl = await fileToDataUrl(file);
+    }
+    if (dataUrl.length > 27 * 1024 * 1024) toast('ไฟล์วิดีโอยังใหญ่เกิน 20MB อาจอัปโหลดไม่สำเร็จ', 'error');
     items[i].videos.push({ data: dataUrl, name: file.name });
     renderItems();
   }

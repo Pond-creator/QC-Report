@@ -92,6 +92,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 20px; }
+.grid-2 .full-row { grid-column: 1 / -1; }
 @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
 /* ====== Summary cards (Accepted/Defected/Rejected) ====== */
@@ -221,6 +222,17 @@ table.report-table tbody tr:hover { background: #f7f9ff; }
   .reason-block .reason-head { flex-direction: column; gap: 10px; }
   .reason-block .reason-head > div { max-width: 100% !important; width: 100%; }
   .reason-block .qty-field { width: 100%; }
+
+  /* หัวฟอร์ม: จัดลำดับใหม่เฉพาะมือถือ (เดสก์ท็อปเรียงตามลำดับใน HTML เหมือนเดิม) */
+  .form-fields.grid-2 { grid-template-columns: 1fr; }
+  .form-fields .f-supplier-name  { order: 1; }
+  .form-fields .f-supplier-code  { order: 2; }
+  .form-fields .f-stock-code     { order: 3; }
+  .form-fields .f-ean13          { order: 4; }
+  .form-fields .f-date-in        { order: 5; }
+  .form-fields .f-date-qa        { order: 6; }
+  .form-fields .f-description    { order: 7; }
+  .form-fields .f-order          { order: 8; }
 
   /* เอกสาร (view/share/print) */
   .doc-a4 { padding: 16px; }
