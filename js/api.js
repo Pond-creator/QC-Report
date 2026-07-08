@@ -59,7 +59,13 @@ async function apiCall(action, data = {}, opts = {}) {
       });
       res = await fetch(API_URL + '?' + params.toString());
     }
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch (parseErr) {
+      // เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (เช่น หลุด/timeout ตอนอัปโหลดไฟล์ใหญ่บนเน็ตช้า) — แจ้งให้เช็คก่อนกดซ้ำ แทนโชว์ error ดิบๆ
+      return { success: false, message: 'เซิร์ฟเวอร์ตอบกลับช้าเกินไปหรือขาดการเชื่อมต่อระหว่างอัปโหลด กรุณาเช็คหน้ารายงานก่อนกดส่งซ้ำ' };
+    }
     if (json.success === false && json.message === 'Unauthorized') {
       Auth.clear();
       window.location.href = 'index.html';
@@ -149,9 +155,13 @@ function compressImage(file, maxDim = 1280, quality = 0.75) {
 
 // บีบอัดวิดีโอฝั่ง client ก่อนอัปโหลด (ย่อความละเอียด + re-encode บิตเรตต่ำผ่าน canvas+MediaRecorder)
 // คืน dataURL ถ้าบีบสำเร็จ, คืน null ถ้าเบราว์เซอร์ไม่รองรับ/บีบไม่สำเร็จ (ผู้เรียกต้อง fallback ไปใช้ไฟล์เดิม)
+// สำคัญ: ทำงานเฉพาะเบราว์เซอร์ที่ MediaRecorder ส่งออกเป็น mp4 ได้จริง (Safari/iOS) เท่านั้น —
+// เบราว์เซอร์อื่น (Chrome/Android) ทำได้แค่ webm ซึ่งไม่ตรงตามที่ต้องการ "mp4 เท่านั้น" จึงข้ามการแปลงไปเลย
+// ใช้ไฟล์ต้นฉบับแทน (กล้อง Android ปกติถ่ายเป็น mp4/h264 อยู่แล้ว ไม่มีปัญหาแบบ .mov/HEVC ของไอโฟน)
 function compressVideo(file, maxDim = 640, fps = 24, videoBitsPerSecond = 800000) {
   return new Promise((resolve) => {
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { resolve(null); return; }
+    if (!MediaRecorder.isTypeSupported('video/mp4')) { resolve(null); return; }
     let settled = false;
     const finish = (result) => {
       if (settled) return;
@@ -193,9 +203,9 @@ function compressVideo(file, maxDim = 640, fps = 24, videoBitsPerSecond = 800000
         combined = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
       } catch (e) { clearTimeout(timeoutGuard); finish(null); return; }
 
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus'
-        : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
-      if (!mimeType) { clearTimeout(timeoutGuard); finish(null); return; }
+      // เช็คแล้วว่า mp4 รองรับตั้งแต่ต้นฟังก์ชัน (บรรทัดบนสุด) จึงบังคับ mp4 ได้ตรงนี้เลย
+      const mimeType = 'video/mp4';
+      const outputType = 'video/mp4';
 
       let recorder;
       try { recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond }); }
@@ -206,7 +216,7 @@ function compressVideo(file, maxDim = 640, fps = 24, videoBitsPerSecond = 800000
       recorder.onstop = () => {
         clearTimeout(timeoutGuard);
         if (!chunks.length) { finish(null); return; }
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: outputType });
         const reader = new FileReader();
         reader.onload = () => finish(reader.result);
         reader.onerror = () => finish(null);

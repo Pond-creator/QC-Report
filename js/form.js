@@ -39,7 +39,7 @@ function photoSlot(i, pi, slot, dataUrl, label) {
     ${dataUrl
       ? `<img src="${dataUrl}"><button type="button" class="rm" data-act="removePhoto" data-i="${i}" data-pi="${pi}" data-slot="${slot}">&times;</button>`
       : `<span>${label}</span>`}
-    <input type="file" accept="image/*" capture="environment" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}">
+    <input type="file" accept="image/*" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}">
   </div>`;
 }
 
@@ -85,7 +85,7 @@ function renderItems() {
             <span class="video-name">${escapeHtml(v.name || ('คลิปที่ ' + (vi + 1)))}</span>
             <button type="button" class="pair-remove" data-act="removeVideo" data-i="${i}" data-vi="${vi}" title="ลบคลิป">&times;</button>
           </div>`).join('') : `<div class="video-slot"><span class="video-name empty">ยังไม่แนบคลิป</span></div>`}
-        <input type="file" accept="video/*" capture="environment" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
+        <input type="file" accept="video/*" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
         <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('video-${i}').click()">+ เลือกไฟล์วิดีโอ</button>
       </div>
     </div>
@@ -122,25 +122,29 @@ reasonListEl.addEventListener('change', async (e) => {
   else if (act === 'photo') {
     const file = e.target.files[0];
     if (!file) return;
-    const dataUrl = await compressImage(file);
+    let dataUrl;
+    try {
+      dataUrl = await compressImage(file); // แปลงเป็น JPEG เสมอ (รวมไฟล์ HEIC จากไอโฟน)
+    } catch (err) {
+      // บางไฟล์ (เช่น HEIC บางเวอร์ชัน) เบราว์เซอร์ decode ไม่ได้ → ใช้ไฟล์ต้นฉบับแทนดีกว่าไม่มีรูปเลย
+      toast('ย่อรูปไม่สำเร็จ ใช้ไฟล์ต้นฉบับแทน (อาจไม่ใช่ JPEG)', 'info');
+      dataUrl = await fileToDataUrl(file);
+    }
     items[i].photos[e.target.dataset.pi][e.target.dataset.slot] = dataUrl;
     renderItems();
   } else if (act === 'video') {
     const file = e.target.files[0];
     if (!file) return;
-    let dataUrl;
-    if (file.size > 5 * 1024 * 1024) {
-      // ไฟล์ใหญ่พอสมควร → ลองบีบอัดก่อน (ย่อความละเอียด+บิตเรตต่ำ) ถ้าเบราว์เซอร์ไม่รองรับจะ fallback ไปใช้ไฟล์เดิม
-      showLoader('กำลังบีบอัดวิดีโอ...');
-      const compressed = await compressVideo(file);
-      hideLoader();
-      dataUrl = compressed || await fileToDataUrl(file);
-      if (!compressed) toast('เบราว์เซอร์นี้บีบอัดวิดีโอไม่ได้ ใช้ไฟล์ต้นฉบับแทน', 'info');
-    } else {
-      dataUrl = await fileToDataUrl(file);
-    }
+    // บีบอัด + แปลงเป็น mp4/webm เสมอ (กันไฟล์ .mov/HEVC จากไอโฟนที่บางเบราว์เซอร์เปิดไม่ได้) ถ้าเบราว์เซอร์ไม่รองรับจะ fallback ไปใช้ไฟล์เดิม
+    showLoader('กำลังแปลง/บีบอัดวิดีโอ...');
+    const compressed = await compressVideo(file);
+    hideLoader();
+    const dataUrl = compressed || await fileToDataUrl(file);
+    if (!compressed) toast('เบราว์เซอร์นี้แปลงวิดีโอไม่ได้ ใช้ไฟล์ต้นฉบับแทน', 'info');
     if (dataUrl.length > 27 * 1024 * 1024) toast('ไฟล์วิดีโอยังใหญ่เกิน 20MB อาจอัปโหลดไม่สำเร็จ', 'error');
-    items[i].videos.push({ data: dataUrl, name: file.name });
+    const outExt = compressed ? (dataUrl.startsWith('data:video/mp4') ? '.mp4' : '.webm') : null;
+    const displayName = outExt ? file.name.replace(/\.[^.]+$/, '') + outExt : file.name;
+    items[i].videos.push({ data: dataUrl, name: displayName });
     renderItems();
   }
 });
@@ -167,7 +171,11 @@ document.getElementById('btnSignVerified').addEventListener('click', () => {
 });
 
 // ====== submit ======
+// กันกดส่งซ้ำ (ไฟล์รูป/วิดีโอใหญ่ อาจใช้เวลานานบนมือถือ ผู้ใช้เข้าใจผิดว่าค้างแล้วกดซ้ำ กลายเป็นสร้างซ้ำ 2 ใบ)
+let isSubmitting = false;
 document.getElementById('btnSubmit').addEventListener('click', async () => {
+  if (isSubmitting) return;
+
   const supplier_code = val('supplier_code').trim();
   const supplier_name = val('supplier_name').trim();
   const stock_code = val('stock_code').trim();
@@ -185,41 +193,58 @@ document.getElementById('btnSubmit').addEventListener('click', async () => {
     if (num(items[i].qty) <= 0) { toast(`กรุณากรอก Qty ของรายการที่ ${i + 1}`, 'error'); return; }
   }
 
+  if (!editId) {
+    if (!verifiedSign) { toast('กรุณาเซ็นชื่อผู้ตรวจสอบ (Verified by) ก่อนส่งข้อมูล', 'error'); return; }
+    if (!val('verified_date')) { toast('กรุณาเลือก Date สำหรับ Verified by', 'error'); return; }
+  }
+
   const itemsPayload = items.map(it => ({
     type: it.type, reason_text: it.reason_text.trim(), qty: num(it.qty),
     photos: it.photos.filter(p => p.closeup || p.overview),
     videos: it.videos.map(v => v.data)
   }));
 
-  if (editId) {
-    const res = await API.updateReport({
-      id: editId, supplier_code, supplier_name, stock_code, ean13, description, order_qty, date_in, date_qa,
-      items: itemsPayload
-    });
-    if (res.success) {
-      toast('บันทึกการแก้ไขสำเร็จ', 'success');
-      setTimeout(() => { window.location.href = 'view.html?id=' + encodeURIComponent(editId); }, 600);
+  const btn = document.getElementById('btnSubmit');
+  const originalLabel = btn.textContent;
+  isSubmitting = true;
+  btn.disabled = true;
+  btn.textContent = 'กำลังส่ง... กรุณาอย่ากดซ้ำ';
+  // คืนสถานะปุ่มให้กดใหม่ได้ (เรียกเฉพาะตอนไม่สำเร็จ — ตอนสำเร็จกำลังจะเปลี่ยนหน้าอยู่แล้ว ปล่อยปุ่มปิดไว้กันกดซ้ำระหว่างรอ)
+  const resetButton = () => { isSubmitting = false; btn.disabled = false; btn.textContent = originalLabel; };
+
+  let res;
+  try {
+    if (editId) {
+      res = await API.updateReport({
+        id: editId, supplier_code, supplier_name, stock_code, ean13, description, order_qty, date_in, date_qa,
+        items: itemsPayload
+      });
     } else {
-      toast(res.message || 'บันทึกไม่สำเร็จ', 'error');
+      const verified_by = val('verified_by').trim() || (Auth.getUser() || {}).name;
+      res = await API.createReport({
+        supplier_code, supplier_name, stock_code, ean13, description, order_qty, date_in, date_qa,
+        verified_sign: verifiedSign, verified_by, verified_date: val('verified_date'),
+        items: itemsPayload
+      });
     }
+  } catch (err) {
+    resetButton();
+    toast('เกิดข้อผิดพลาดไม่คาดคิด: ' + err.message, 'error');
     return;
   }
 
-  if (!verifiedSign) { toast('กรุณาเซ็นชื่อผู้ตรวจสอบ (Verified by) ก่อนส่งข้อมูล', 'error'); return; }
-  const verified_date = val('verified_date');
-  if (!verified_date) { toast('กรุณาเลือก Date สำหรับ Verified by', 'error'); return; }
-  const verified_by = val('verified_by').trim() || (Auth.getUser() || {}).name;
+  if (!res.success) {
+    resetButton();
+    toast(res.message || 'บันทึกไม่สำเร็จ ตรวจสอบหน้ารายงานก่อนกดส่งซ้ำ (เผื่อบันทึกไปแล้วแต่แจ้งผลช้า)', 'error');
+    return;
+  }
 
-  const res = await API.createReport({
-    supplier_code, supplier_name, stock_code, ean13, description, order_qty, date_in, date_qa,
-    verified_sign: verifiedSign, verified_by, verified_date,
-    items: itemsPayload
-  });
-  if (res.success) {
+  if (editId) {
+    toast('บันทึกการแก้ไขสำเร็จ', 'success');
+    setTimeout(() => { window.location.href = 'view.html?id=' + encodeURIComponent(editId); }, 600);
+  } else {
     toast('ส่งข้อมูลสำเร็จ: ' + res.id, 'success');
     setTimeout(() => { window.location.href = 'view.html?id=' + encodeURIComponent(res.id); }, 600);
-  } else {
-    toast(res.message || 'บันทึกไม่สำเร็จ', 'error');
   }
 });
 
