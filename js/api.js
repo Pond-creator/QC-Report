@@ -6,6 +6,9 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbxXX9kC5Eg0Aew0UWY6tewJPVBhNRt7RSBaxuwLyziDnrag4W6e-Q3FlOtSMqWdYXVd/exec';
 
 // ====== Global loading overlay (มีตัวเลข % วิ่งขึ้นเรื่อยๆ กันรู้สึกค้าง) ======
+// หมายเหตุ: ลองทำ % อัปโหลดจริงผ่าน xhr.upload.onprogress ไปแล้ว แต่การผูก listener บน xhr.upload
+// ทำให้ request cross-origin ไปหา Apps Script ไม่เข้าเงื่อนไข "simple request" อีกต่อไป (ต้องผ่าน CORS preflight)
+// ซึ่ง Apps Script Web App ตอบ preflight (OPTIONS) ไม่ได้ → อัปโหลดล้มเหลวทุกครั้ง จึงต้องใช้ % ปลอมแบบนี้ต่อไป
 let _loaderEl = null, _loaderTimer = null, _loaderPct = 0, _loaderCount = 0;
 function _ensureLoader() {
   if (_loaderEl) return _loaderEl;
@@ -44,24 +47,26 @@ async function apiCall(action, data = {}, opts = {}) {
   if (!opts.silent) showLoader(opts.loadingText);
   try {
     const payloadStr = JSON.stringify(payload);
-    let res;
+    let rawText;
     if (payloadStr.length > 3500) {
       // payload ใหญ่ (แนบรูป/วิดีโอ/ลายเซ็น) → POST แบบ text/plain กัน CORS preflight
-      res = await fetch(API_URL, {
+      const res = await fetch(API_URL, {
         method: 'POST',
         body: payloadStr,
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
       });
+      rawText = await res.text();
     } else {
       const params = new URLSearchParams();
       Object.entries(payload).forEach(([k, v]) => {
         params.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
       });
-      res = await fetch(API_URL + '?' + params.toString());
+      const res = await fetch(API_URL + '?' + params.toString());
+      rawText = await res.text();
     }
     let json;
     try {
-      json = await res.json();
+      json = JSON.parse(rawText);
     } catch (parseErr) {
       // เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (เช่น หลุด/timeout ตอนอัปโหลดไฟล์ใหญ่บนเน็ตช้า) — แจ้งให้เช็คก่อนกดซ้ำ แทนโชว์ error ดิบๆ
       return { success: false, message: 'เซิร์ฟเวอร์ตอบกลับช้าเกินไปหรือขาดการเชื่อมต่อระหว่างอัปโหลด กรุณาเช็คหน้ารายงานก่อนกดส่งซ้ำ' };
@@ -130,7 +135,7 @@ function fileToDataUrl(file) {
 }
 
 // ย่อรูปฝั่ง client ก่อนอัปโหลด (ลดขนาด payload) — คืน dataURL jpeg
-function compressImage(file, maxDim = 1280, quality = 0.75) {
+function compressImage(file, maxDim = 1100, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
@@ -153,12 +158,23 @@ function compressImage(file, maxDim = 1280, quality = 0.75) {
   });
 }
 
+// ดูความยาวคลิปคร่าวๆ ก่อนบีบอัดจริง (โหลดแค่ metadata เร็วมาก) — ใช้เตือนผู้ใช้ล่วงหน้าว่าคลิปยาวจะรอนาน
+function getVideoDuration(file) {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.src = URL.createObjectURL(file);
+    video.onloadedmetadata = () => { URL.revokeObjectURL(video.src); resolve(video.duration || 0); };
+    video.onerror = () => resolve(0);
+  });
+}
+
 // บีบอัดวิดีโอฝั่ง client ก่อนอัปโหลด (ย่อความละเอียด + re-encode บิตเรตต่ำผ่าน canvas+MediaRecorder)
 // คืน dataURL ถ้าบีบสำเร็จ, คืน null ถ้าเบราว์เซอร์ไม่รองรับ/บีบไม่สำเร็จ (ผู้เรียกต้อง fallback ไปใช้ไฟล์เดิม)
 // สำคัญ: ทำงานเฉพาะเบราว์เซอร์ที่ MediaRecorder ส่งออกเป็น mp4 ได้จริง (Safari/iOS) เท่านั้น —
 // เบราว์เซอร์อื่น (Chrome/Android) ทำได้แค่ webm ซึ่งไม่ตรงตามที่ต้องการ "mp4 เท่านั้น" จึงข้ามการแปลงไปเลย
 // ใช้ไฟล์ต้นฉบับแทน (กล้อง Android ปกติถ่ายเป็น mp4/h264 อยู่แล้ว ไม่มีปัญหาแบบ .mov/HEVC ของไอโฟน)
-function compressVideo(file, maxDim = 640, fps = 24, videoBitsPerSecond = 800000) {
+function compressVideo(file, maxDim = 480, fps = 20, videoBitsPerSecond = 500000) {
   return new Promise((resolve) => {
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { resolve(null); return; }
     if (!MediaRecorder.isTypeSupported('video/mp4')) { resolve(null); return; }

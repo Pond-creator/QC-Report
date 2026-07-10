@@ -146,6 +146,9 @@ reasonListEl.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     // บีบอัด + แปลงเป็น mp4/webm เสมอ (กันไฟล์ .mov/HEVC จากไอโฟนที่บางเบราว์เซอร์เปิดไม่ได้) ถ้าเบราว์เซอร์ไม่รองรับจะ fallback ไปใช้ไฟล์เดิม
+    // เตือนล่วงหน้าถ้าคลิปยาว (ขั้นตอนบีบอัดต้อง "เล่นคลิปจริง" จึงใช้เวลาพอๆกับความยาวคลิป)
+    const dur = await getVideoDuration(file);
+    if (dur > 20) toast(`คลิปยาว ${Math.round(dur)} วิ กำลังบีบอัด ใช้เวลาประมาณเท่ากัน กรุณารอสักครู่`, 'info');
     showLoader('กำลังแปลง/บีบอัดวิดีโอ...');
     const compressed = await compressVideo(file);
     hideLoader();
