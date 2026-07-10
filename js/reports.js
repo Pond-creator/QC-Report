@@ -19,6 +19,8 @@ if ((Auth.getUser() || {}).role === 'monitor') {
   sf.disabled = true;
 }
 
+document.getElementById('btnRefresh').addEventListener('click', () => loadList());
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

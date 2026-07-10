@@ -127,16 +127,18 @@ function buildDocHtml(report, items, opts) {
     </div>
 
     <div class="doc-grid">
-      <div class="row"><span class="k">Supplier Item Code</span><span class="v">${escapeHtml(report.supplier_code)}</span></div>
       <div class="row"><span class="k">Supplier Name</span><span class="v">${escapeHtml(supplierName || '-')}</span></div>
+      <div class="row"><span class="k">Supplier Item Code</span><span class="v">${escapeHtml(report.supplier_code)}</span></div>
       <div class="row"><span class="k">Stock Code</span><span class="v">${escapeHtml(report.stock_code)}</span></div>
-      <div class="row"><span class="k">Date In</span><span class="v">${fmtDateTH(report.date_in)}</span></div>
       <div class="row"><span class="k">EAN 13 Code</span><span class="v">${escapeHtml(report.ean13 || '-')}</span></div>
+      <div class="row"><span class="k">Date In</span><span class="v">${fmtDateTH(report.date_in)}</span></div>
       <div class="row"><span class="k">QA Date</span><span class="v">${fmtDateTH(report.date_qa)}</span></div>
-      <div class="row"><span class="k">Order (Pcs)</span><span class="v">${report.order_qty}</span></div>
+    </div>
+    <div class="row" style="border-bottom:1px dotted var(--border);padding:4px 0">
+      <span class="k">Description</span> <span class="v">${escapeHtml(description)}</span>
     </div>
     <div class="row" style="border-bottom:1px dotted var(--border);padding:4px 0;margin-bottom:10px">
-      <span class="k">Description</span> <span class="v">${escapeHtml(description)}</span>
+      <span class="k">Order (Pcs)</span><span class="v">${report.order_qty}</span>
     </div>
 
     <div class="doc-summary">

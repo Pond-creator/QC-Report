@@ -34,12 +34,20 @@ function newItem() { return { type: 'Defected', reason_text: '', qty: '', photos
 
 const reasonListEl = document.getElementById('reasonList');
 
+// ให้ปุ่มแยกกันชัดเจน "ถ่ายรูป" (บังคับกล้อง) กับ "เลือกจากคลัง" (เปิดคลังรูป) — เพราะ Android บางรุ่นถ้าไม่บังคับ capture
+// จะไม่มีตัวเลือกกล้องให้เลือกเลย (เข้าคลังภาพตรงๆ), ส่วนไอโฟนไม่ต้องบังคับก็มีตัวเลือกกล้องอยู่แล้ว แยกปุ่มจึงชัวร์สุดทั้ง 2 แพลตฟอร์ม
 function photoSlot(i, pi, slot, dataUrl, label) {
-  return `<div class="photo-slot">
-    ${dataUrl
-      ? `<img src="${dataUrl}"><button type="button" class="rm" data-act="removePhoto" data-i="${i}" data-pi="${pi}" data-slot="${slot}">&times;</button>`
-      : `<span>${label}</span>`}
-    <input type="file" accept="image/*" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}">
+  if (dataUrl) {
+    return `<div class="photo-slot">
+      <img src="${dataUrl}"><button type="button" class="rm" data-act="removePhoto" data-i="${i}" data-pi="${pi}" data-slot="${slot}">&times;</button>
+    </div>`;
+  }
+  return `<div class="photo-slot photo-slot-empty">
+    <span class="photo-slot-label">${label}</span>
+    <div class="photo-slot-actions">
+      <label class="pick-btn" title="ถ่ายรูป">📷<input type="file" accept="image/*" capture="environment" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}"></label>
+      <label class="pick-btn" title="เลือกจากคลัง">🖼️<input type="file" accept="image/*" data-act="photo" data-i="${i}" data-pi="${pi}" data-slot="${slot}"></label>
+    </div>
   </div>`;
 }
 
@@ -85,8 +93,10 @@ function renderItems() {
             <span class="video-name">${escapeHtml(v.name || ('คลิปที่ ' + (vi + 1)))}</span>
             <button type="button" class="pair-remove" data-act="removeVideo" data-i="${i}" data-vi="${vi}" title="ลบคลิป">&times;</button>
           </div>`).join('') : `<div class="video-slot"><span class="video-name empty">ยังไม่แนบคลิป</span></div>`}
-        <input type="file" accept="video/*" data-act="video" data-i="${i}" id="video-${i}" style="display:none">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('video-${i}').click()">+ เลือกไฟล์วิดีโอ</button>
+        <div class="video-add-row">
+          <label class="btn btn-ghost btn-sm">🎥 ถ่ายวิดีโอ<input type="file" accept="video/*" capture="environment" data-act="video" data-i="${i}" style="display:none"></label>
+          <label class="btn btn-ghost btn-sm">📁 เลือกจากคลัง<input type="file" accept="video/*" data-act="video" data-i="${i}" style="display:none"></label>
+        </div>
       </div>
     </div>
   `).join('');
