@@ -184,6 +184,8 @@ table.report-table th, table.report-table td { padding: 10px 12px; border-bottom
 table.report-table th { background: #f7f8fa; font-weight: 700; color: var(--muted); }
 table.report-table tbody tr { cursor: pointer; }
 table.report-table tbody tr:hover { background: #f7f9ff; }
+table.report-table tbody tr.row-approved { background: #f0faf1; }
+table.report-table tbody tr.row-approved:hover { background: #e6f6e8; }
 .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .badge-pending { background: #fff4e0; color: var(--orange); }
 .badge-approved { background: #e9f9ec; color: var(--green); }

@@ -49,6 +49,15 @@ function render() {
   }
   if (!rows.length) { listWrap.innerHTML = `<div class="empty-state">ไม่พบเอกสาร</div>`; return; }
 
+  // งานที่ยังไม่อนุมัติขึ้นก่อนเสมอ (ใหม่สุดบนสุด) ส่วนที่อนุมัติแล้วเลื่อนไปกองไว้ด้านล่าง (อนุมัติล่าสุดอยู่บนกลุ่มนี้ อนุมัตินานแล้วจมล่างสุด)
+  rows = rows.slice().sort((a, b) => {
+    const aDone = a.status === 'approved', bDone = b.status === 'approved';
+    if (aDone !== bDone) return aDone ? 1 : -1;
+    return aDone
+      ? String(b.updated_at).localeCompare(String(a.updated_at))
+      : String(b.created_at).localeCompare(String(a.created_at));
+  });
+
   const role = (Auth.getUser() || {}).role;
   const isAdmin = role === 'admin';
   const canEdit = role === 'admin' || role === 'user';
@@ -68,7 +77,7 @@ function render() {
       </thead>
       <tbody>
         ${pageRows.map(r => `
-          <tr onclick="window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
+          <tr class="${r.status === 'approved' ? 'row-approved' : ''}" onclick="window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
             <td data-label="NO.">${escapeHtml(r.id)}</td>
             <td data-label="Supplier Item Code">${escapeHtml(r.supplier_code)}</td>
             <td data-label="Supplier Name">${escapeHtml(r.supplier_name)}</td>
