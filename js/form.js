@@ -62,18 +62,18 @@ function renderItems() {
       <button type="button" class="remove-block" data-act="removeBlock" data-i="${i}" title="ลบรายการนี้">&times;</button>
       <div class="reason-head">
         <div class="field" style="max-width:150px">
-          <label>ประเภท <span class="req">*</span></label>
+          <label>ประเภท</label>
           <select data-act="type" data-i="${i}">
             <option value="Defected" ${it.type === 'Defected' ? 'selected' : ''}>Defected</option>
             <option value="Rejected" ${it.type === 'Rejected' ? 'selected' : ''}>Rejected</option>
           </select>
         </div>
         <div class="field">
-          <label>สาเหตุที่ ${it.type} <span class="req">*</span></label>
+          <label>สาเหตุที่ ${it.type}</label>
           <input type="text" data-act="reason" data-i="${i}" value="${escapeHtml(it.reason_text)}" placeholder="ระบุสาเหตุ">
         </div>
         <div class="field qty-field">
-          <label>จำนวน (ชิ้น) <span class="req">*</span></label>
+          <label>จำนวน (ชิ้น)</label>
           <input type="number" min="0" class="type-${it.type}" data-act="qty" data-i="${i}" value="${it.qty}">
         </div>
       </div>
@@ -198,14 +198,6 @@ document.getElementById('btnSubmit').addEventListener('click', async () => {
   const date_in = val('date_in');
   const date_qa = val('date_qa');
 
-  if (!supplier_code || !stock_code || !description || !date_in || !date_qa) {
-    toast('กรุณากรอกข้อมูลหัวฟอร์มให้ครบ (ช่องสีแดง)', 'error'); return;
-  }
-  for (let i = 0; i < items.length; i++) {
-    if (!items[i].reason_text.trim()) { toast(`กรุณากรอก Reason ของรายการที่ ${i + 1}`, 'error'); return; }
-    if (num(items[i].qty) <= 0) { toast(`กรุณากรอก Qty ของรายการที่ ${i + 1}`, 'error'); return; }
-  }
-
   if (!editId) {
     if (!verifiedSign) { toast('กรุณาเซ็นชื่อผู้ตรวจสอบ (Verified by) ก่อนส่งข้อมูล', 'error'); return; }
     if (!val('verified_date')) { toast('กรุณาเลือก Date สำหรับ Verified by', 'error'); return; }
@@ -266,6 +258,11 @@ async function loadForEdit(id) {
   const res = await API.getReport(id);
   if (!res.success) { toast(res.message || 'โหลดเอกสารไม่สำเร็จ', 'error'); return; }
   const r = res.report;
+  if (r.status === 'approved') {
+    toast('เอกสารนี้อนุมัติแล้ว ไม่สามารถแก้ไขได้', 'error');
+    setTimeout(() => { window.location.href = 'view.html?id=' + encodeURIComponent(id); }, 800);
+    return;
+  }
   document.getElementById('supplier_code').value = r.supplier_code || '';
   document.getElementById('supplier_name').value = r.supplier_name || '';
   document.getElementById('stock_code').value = r.stock_code || '';

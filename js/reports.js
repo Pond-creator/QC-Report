@@ -49,7 +49,10 @@ function render() {
   }
   if (!rows.length) { listWrap.innerHTML = `<div class="empty-state">ไม่พบเอกสาร</div>`; return; }
 
-  const isAdmin = (Auth.getUser() || {}).role === 'admin';
+  const role = (Auth.getUser() || {}).role;
+  const isAdmin = role === 'admin';
+  const canEdit = role === 'admin' || role === 'user';
+  const showManageCol = isAdmin || canEdit;
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   if (curPage > totalPages) curPage = totalPages;
   const pageRows = rows.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
@@ -60,7 +63,7 @@ function render() {
         <tr>
           <th>NO.</th><th>Supplier Item Code</th><th>Supplier Name</th><th>Stock Code</th><th>Description</th>
           <th>Order</th><th>Accepted</th><th>Defected</th><th>Rejected</th>
-          <th>สถานะ</th><th>วันที่สร้าง</th>${isAdmin ? '<th>จัดการ</th>' : ''}
+          <th>สถานะ</th><th>วันที่สร้าง</th>${showManageCol ? '<th>จัดการ</th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -77,9 +80,9 @@ function render() {
             <td data-label="Rejected">${r.rejected_qty}</td>
             <td data-label="สถานะ"><span class="badge badge-${r.status === 'approved' ? 'approved' : 'pending'}">${statusLabel(r.status)}</span></td>
             <td data-label="วันที่สร้าง">${fmtDateTimeTH(r.created_at)}</td>
-            ${isAdmin ? `<td class="row-actions" data-label="จัดการ">
-              <button type="button" class="icon-btn" title="แก้ไข" data-act="edit" data-id="${escapeHtml(r.id)}">✏️</button>
-              <button type="button" class="icon-btn" title="ลบ" data-act="delete" data-id="${escapeHtml(r.id)}">🗑</button>
+            ${showManageCol ? `<td class="row-actions" data-label="จัดการ">
+              ${(canEdit && r.status !== 'approved') ? `<button type="button" class="icon-btn" title="แก้ไข" data-act="edit" data-id="${escapeHtml(r.id)}">✏️</button>` : ''}
+              ${isAdmin ? `<button type="button" class="icon-btn" title="ลบ" data-act="delete" data-id="${escapeHtml(r.id)}">🗑</button>` : ''}
             </td>` : ''}
           </tr>`).join('')}
       </tbody>
