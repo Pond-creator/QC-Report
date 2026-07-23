@@ -66,6 +66,7 @@ function renderItems() {
           <select data-act="type" data-i="${i}">
             <option value="Defected" ${it.type === 'Defected' ? 'selected' : ''}>Defected</option>
             <option value="Rejected" ${it.type === 'Rejected' ? 'selected' : ''}>Rejected</option>
+            <option value="Other" ${it.type === 'Other' ? 'selected' : ''}>Other</option>
           </select>
         </div>
         <div class="field">
@@ -105,15 +106,18 @@ function renderItems() {
 
 function recalcSummary() {
   const order = num(val('order_qty'));
-  let defected = 0, rejected = 0;
+  let defected = 0, rejected = 0, other = 0;
   items.forEach(it => {
     const q = num(it.qty);
-    if (it.type === 'Rejected') rejected += q; else defected += q;
+    if (it.type === 'Rejected') rejected += q;
+    else if (it.type === 'Other') other += q;
+    else defected += q;
   });
-  const accepted = order - defected - rejected;
+  const accepted = order - defected - rejected - other;
   document.getElementById('sumAccepted').textContent = accepted;
   document.getElementById('sumDefected').textContent = defected;
   document.getElementById('sumRejected').textContent = rejected;
+  document.getElementById('sumOther').textContent = other;
   document.getElementById('sumAcceptedBox').classList.toggle('negative', accepted < 0);
 }
 

@@ -15,6 +15,7 @@
   --blue: #2f6fed;
   --purple: #7048e8;
   --green: #2b8a3e;
+  --teal: #0c8599;
   --radius: 10px;
 }
 
@@ -97,8 +98,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .grid-2 .full-row { grid-column: 1 / -1; }
 @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
-/* ====== Summary cards (Accepted/Defected/Rejected) ====== */
-.summary-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+/* ====== Summary cards (Accepted/Defected/Rejected/Other) ====== */
+.summary-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
 @media (max-width: 700px) { .summary-row { grid-template-columns: 1fr; } }
 .summary-box { border-radius: 10px; padding: 14px 16px; text-align: center; border: 1.5px solid; }
 .summary-box .lbl { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
@@ -106,6 +107,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .summary-accepted { border-color: var(--orange); background: #fff8ec; color: var(--orange); }
 .summary-defected { border-color: var(--blue); background: #eef4ff; color: var(--blue); }
 .summary-rejected { border-color: var(--purple); background: #f4f0ff; color: var(--purple); }
+.summary-other { border-color: var(--teal); background: #e6f7f9; color: var(--teal); }
 .summary-box.negative { border-color: var(--red); background: #fff0f0; color: var(--red); }
 
 /* ====== Reason blocks ====== */
@@ -115,6 +117,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .reason-block .qty-field { width: 110px; flex: none; }
 .reason-block .qty-field input.type-Defected { border-color: var(--blue); }
 .reason-block .qty-field input.type-Rejected { border-color: var(--purple); }
+.reason-block .qty-field input.type-Other { border-color: var(--teal); }
 .reason-block .remove-block { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; }
 .reason-block .remove-block:hover { color: var(--red); }
 
@@ -201,7 +204,7 @@ table.report-table tbody tr.row-approved:hover { background: #e6f6e8; }
 .doc-grid .row { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--border); padding: 4px 0; }
 .doc-grid .row .k { color: var(--muted); }
 .doc-grid .row .v { font-weight: 600; }
-.doc-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 16px 0; }
+.doc-summary { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin: 16px 0; }
 .doc-summary .box { text-align: center; border-radius: 8px; padding: 10px; font-weight: 700; }
 .doc-reason { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 6px; }
 .doc-reason h3 { font-size: 15px; margin-bottom: 10px; }
@@ -210,6 +213,7 @@ table.report-table tbody tr.row-approved:hover { background: #e6f6e8; }
 .doc-reason-item .tag { font-weight: 700; padding: 1px 8px; border-radius: 6px; font-size: 12px; }
 .tag-Defected { background: #eef4ff; color: var(--blue); }
 .tag-Rejected { background: #f4f0ff; color: var(--purple); }
+.tag-Other { background: #e6f7f9; color: var(--teal); }
 .doc-photo-grid { display: flex; flex-wrap: wrap; gap: 10px; }
 .doc-photo-grid figure { margin: 0; width: 130px; }
 .doc-photo-grid img { width: 130px; height: 130px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }

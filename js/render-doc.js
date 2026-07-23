@@ -145,6 +145,7 @@ function buildDocHtml(report, items, opts) {
       <div class="box summary-accepted">Accepted<br>${report.accepted_qty} Pcs</div>
       <div class="box summary-defected">Defected<br>${report.defected_qty} Pcs</div>
       <div class="box summary-rejected">Rejected<br>${report.rejected_qty} Pcs</div>
+      <div class="box summary-other">Other<br>${report.other_qty || 0} Pcs</div>
     </div>
 
     <div class="doc-reason">
