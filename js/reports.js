@@ -77,7 +77,7 @@ function render() {
       </thead>
       <tbody>
         ${pageRows.map(r => `
-          <tr class="${r.status === 'approved' ? 'row-approved' : ''}" onclick="window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
+          <tr class="${r.status === 'approved' ? 'row-approved' : ''}" onclick="if (!event.target.closest('[data-act]')) window.location.href='view.html?id=${encodeURIComponent(r.id)}'">
             <td data-label="NO.">${escapeHtml(r.id)}</td>
             <td data-label="Supplier Item Code">${escapeHtml(r.supplier_code)}</td>
             <td data-label="Supplier Name">${escapeHtml(r.supplier_name)}</td>
@@ -92,6 +92,7 @@ function render() {
             ${showManageCol ? `<td class="row-actions" data-label="จัดการ">
               ${(canEdit && r.status !== 'approved') ? `<button type="button" class="icon-btn" title="แก้ไข" data-act="edit" data-id="${escapeHtml(r.id)}">✏️</button>` : ''}
               ${isAdmin ? `<button type="button" class="icon-btn" title="ลบ" data-act="delete" data-id="${escapeHtml(r.id)}">🗑</button>` : ''}
+              ${(role === 'user' && r.status === 'approved') ? `<button type="button" class="icon-btn" title="แชร์ลิงก์" data-act="share" data-id="${escapeHtml(r.id)}">🔗</button>` : ''}
             </td>` : ''}
           </tr>`).join('')}
       </tbody>
@@ -118,8 +119,51 @@ listWrap.addEventListener('click', async (e) => {
     const res = await API.deleteReport({ id });
     if (res.success) { toast('ลบเอกสารแล้ว', 'success'); curPage = 1; loadList(); }
     else toast(res.message || 'ลบไม่สำเร็จ', 'error');
+  } else if (btn.dataset.act === 'share') {
+    const res = await API.shareReport({ id });
+    if (!res.success) { toast(res.message || 'สร้างลิงก์ไม่สำเร็จ', 'error'); return; }
+    const url = window.location.origin + window.location.pathname.replace(/reports\.html$/, '') + 'share.html?token=' + res.token + '&lang=th';
+    showShareModal(url, res);
   }
 });
+
+// เหมือนกล่องแชร์ใน view.html — คนละไฟล์กันแต่โค้ดสั้นพอไม่คุ้มแยกไฟล์ร่วม
+function showShareModal(url, meta) {
+  const overlay = document.createElement('div');
+  overlay.className = 'sign-overlay';
+  const usageLine = meta
+    ? `ใช้ไปแล้ว ${meta.shareCount}/${meta.shareLimit} ครั้ง · ลิงก์นี้หมดอายุ ${fmtDateTimeTH(meta.expiresAt)}`
+    : '';
+  overlay.innerHTML = `
+    <div class="sign-modal">
+      <div class="sign-modal-title">🔗 ลิงก์แชร์</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">คัดลอกไปส่งได้เลย — กดปุ่มแชร์ซ้ำจะได้ลิงก์ใหม่ ลิงก์เก่าจะใช้ไม่ได้ทันที<br>${usageLine}</div>
+      <input type="text" readonly value="${url.replace(/"/g, '&quot;')}" id="shareLinkInput" style="width:100%;box-sizing:border-box">
+      <div class="sign-modal-actions">
+        <button type="button" class="btn btn-ghost" data-act="close">ปิด</button>
+        <button type="button" class="btn btn-primary" data-act="copy">📋 คัดลอกลิงก์</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const input = overlay.querySelector('#shareLinkInput');
+  input.addEventListener('click', () => input.select());
+
+  overlay.addEventListener('click', async (e) => {
+    const act = e.target.dataset.act;
+    if (act === 'close' || e.target === overlay) { overlay.remove(); }
+    else if (act === 'copy') {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast('คัดลอกลิงก์แล้ว', 'success');
+      } catch (err) {
+        input.select();
+        document.execCommand('copy');
+        toast('คัดลอกลิงก์แล้ว', 'success');
+      }
+    }
+  });
+}
 
 const qInput = document.getElementById('q');
 const suggestEl = document.getElementById('searchSuggest');
