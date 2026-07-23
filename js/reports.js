@@ -71,7 +71,7 @@ function render() {
       <thead>
         <tr>
           <th>NO.</th><th>Supplier Item Code</th><th>Supplier Name</th><th>Stock Code</th><th>Description</th>
-          <th>Order</th><th>Accepted</th><th>Defected</th><th>Rejected</th>
+          <th>Order</th><th>Accepted</th><th>Defected</th><th>Rejected</th><th>Other</th>
           <th>สถานะ</th><th>วันที่สร้าง</th>${showManageCol ? '<th>จัดการ</th>' : ''}
         </tr>
       </thead>
@@ -87,6 +87,7 @@ function render() {
             <td data-label="Accepted">${r.accepted_qty}</td>
             <td data-label="Defected">${r.defected_qty}</td>
             <td data-label="Rejected">${r.rejected_qty}</td>
+            <td data-label="Other">${r.other_qty || 0}</td>
             <td data-label="สถานะ"><span class="badge badge-${r.status === 'approved' ? 'approved' : 'pending'}">${statusLabel(r.status)}</span></td>
             <td data-label="วันที่สร้าง">${fmtDateTimeTH(r.created_at)}</td>
             ${showManageCol ? `<td class="row-actions" data-label="จัดการ">
