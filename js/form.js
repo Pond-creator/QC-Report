@@ -113,7 +113,7 @@ function recalcSummary() {
     else if (it.type === 'Other') other += q;
     else defected += q;
   });
-  const accepted = order - defected - rejected - other;
+  const accepted = order - defected - rejected; // Other นับแยกไว้ดูเฉยๆ ไม่หักออกจาก Accepted
   document.getElementById('sumAccepted').textContent = accepted;
   document.getElementById('sumDefected').textContent = defected;
   document.getElementById('sumRejected').textContent = rejected;
